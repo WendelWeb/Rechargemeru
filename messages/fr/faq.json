@@ -1,0 +1,52 @@
+{
+  "meta": {
+    "title": "Questions fréquentes",
+    "description": "Comment recharger un compte Meru depuis Haïti avec MonCash ou NatCash : identifiant, frais, délais, suivi, remboursement."
+  },
+  "title": "Questions fréquentes",
+  "lead": "Tout ce qu'il faut savoir avant de recharger votre compte Meru en gourdes.",
+  "items": {
+    "what": {
+      "q": "Qu'est-ce que {business} ?",
+      "a": "Un service indépendant, opéré depuis Haïti, qui sert de pont entre votre portefeuille mobile et votre compte Meru : vous payez en gourdes avec MonCash ou NatCash, et l'opérateur envoie les dollars sur votre compte Meru. Ce site n'est affilié ni à Meru, ni à Digicel, ni à Natcom."
+    },
+    "identifier": {
+      "q": "Quel identifiant Meru dois-je donner ?",
+      "a": "L'email ou le nom d'utilisateur de votre compte Meru — jamais un numéro de téléphone. Ouvrez l'application Meru, touchez votre profil, et copiez exactement ce qui s'y affiche. C'est cet identifiant qui reçoit les dollars."
+    },
+    "fees": {
+      "q": "Combien coûte le service ?",
+      "a": "Le taux du jour et chaque frais sont affichés avant de payer, dans le reçu. Le total en gourdes que vous voyez est exactement ce que votre portefeuille débite : il n'y a aucun frais caché ajouté après."
+    },
+    "delay": {
+      "q": "En combien de temps je reçois mes dollars ?",
+      "a": "La recharge est faite à la main par l'opérateur, généralement sous {sla} pendant les heures de service ({hours}). Vous recevez un message WhatsApp dès que c'est fait."
+    },
+    "pendingAfterPay": {
+      "q": "J'ai payé, mais la page dit encore « en attente ». Que faire ?",
+      "a": "Ne payez pas une deuxième fois. La page de suivi interroge MonCash ou NatCash automatiquement pendant quelques minutes ; vous pouvez aussi appuyer sur « Vérifier à nouveau ». Si le statut ne change pas au bout de 15 minutes, écrivez-nous sur WhatsApp avec votre référence et la confirmation reçue de votre portefeuille."
+    },
+    "limits": {
+      "q": "Quels sont les montants acceptés ?",
+      "a": "De {min} à {max} par commande. Les paiements mobiles haïtiens sont aussi limités à {walletLimit} par transaction : au-delà, faites plusieurs commandes."
+    },
+    "wrongAccount": {
+      "q": "Et si je me trompe d'identifiant Meru ?",
+      "a": "Un transfert Meru ne peut pas être annulé, c'est pourquoi nous vous demandons de confirmer l'identifiant avant de payer. Si vous voyez l'erreur avant que la recharge soit faite, écrivez-nous immédiatement sur WhatsApp avec votre référence : tant que la commande n'est pas marquée « rechargée », nous pouvons corriger."
+    },
+    "refund": {
+      "q": "Puis-je être remboursé ?",
+      "a": "Oui, si votre paiement a été encaissé mais que la recharge n'a pas pu être faite (compte Meru introuvable, erreur de notre côté). Le remboursement se fait en gourdes, sur le portefeuille qui a servi à payer, sous 48 heures. Une recharge déjà envoyée sur un compte Meru ne peut pas être reprise."
+    },
+    "track": {
+      "q": "Comment suivre ma commande ?",
+      "a": "Gardez la référence MR- affichée à la création. Sur la page « Suivre ma commande », entrez cette référence et le numéro WhatsApp donné à la commande : vous retrouvez le statut, le reçu et le lien de paiement."
+    }
+  },
+  "stillStuck": {
+    "title": "Vous ne trouvez pas votre réponse ?",
+    "body": "Écrivez-nous sur WhatsApp avec votre référence de commande : une vraie personne vous répond ({hours}).",
+    "cta": "Écrire au support WhatsApp",
+    "message": "Bonjour, j'ai une question"
+  }
+}

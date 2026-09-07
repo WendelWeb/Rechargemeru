@@ -1,0 +1,52 @@
+{
+  "meta": {
+    "title": "Kesyon yo poze souvan",
+    "description": "Kijan pou rechaje yon kont Meru depi Ayiti ak MonCash oswa NatCash : idantifyan, frè, delè, swivi, ranbousman."
+  },
+  "title": "Kesyon yo poze souvan",
+  "lead": "Tout sa ou bezwen konnen anvan ou rechaje kont Meru ou an goud.",
+  "items": {
+    "what": {
+      "q": "Kisa {business} ye ?",
+      "a": "Se yon sèvis endepandan, ki opere depi an Ayiti, e ki sèvi kòm pon ant bous mobil ou ak kont Meru ou : ou peye an goud ak MonCash oswa NatCash, epi operatè a voye dola yo sou kont Meru ou. Sit sa a pa gen okenn lyen ak Meru, ni ak Digicel, ni ak Natcom."
+    },
+    "identifier": {
+      "q": "Ki idantifyan Meru pou m bay ?",
+      "a": "Imel oswa non itilizatè kont Meru ou — pa janm yon nimewo telefòn. Louvri aplikasyon Meru a, peze pwofil ou, epi kopye egzakteman sa ki parèt la. Se idantifyan sa a ki resevwa dola yo."
+    },
+    "fees": {
+      "q": "Konbyen sèvis la koute ?",
+      "a": "To jodi a ak chak frè parèt nan resi a anvan ou peye. Total la an goud ou wè a se egzakteman sa bous ou ap peye : pa gen okenn frè kache ki ajoute apre."
+    },
+    "delay": {
+      "q": "Nan konbyen tan m ap resevwa dola m yo ?",
+      "a": "Se operatè a menm ki fè rechaj la ak men l, anjeneral nan {sla} pandan lè sèvis la ({hours}). W ap resevwa yon mesaj WhatsApp depi li fèt."
+    },
+    "pendingAfterPay": {
+      "q": "Mwen peye, men paj la di « ap tann » toujou. Kisa pou m fè ?",
+      "a": "Pa peye yon dezyèm fwa. Paj swivi a ap mande MonCash oswa NatCash otomatikman pandan kèk minit ; ou ka peze « Verifye ankò » tou. Si estati a pa chanje apre 15 minit, ekri nou sou WhatsApp ak referans ou ak konfimasyon bous ou te voye ba ou a."
+    },
+    "limits": {
+      "q": "Ki montan nou aksepte ?",
+      "a": "Depi {min} rive {max} pou chak kòmand. Peman mobil ayisyen yo gen yon limit {walletLimit} pou chak tranzaksyon tou : si ou bezwen plis, fè plizyè kòmand."
+    },
+    "wrongAccount": {
+      "q": "E si m bay yon move idantifyan Meru ?",
+      "a": "Yon transfè Meru pa ka anile, se poutèt sa nou mande ou konfime idantifyan an anvan ou peye. Si ou wè erè a anvan rechaj la fèt, ekri nou tousuit sou WhatsApp ak referans ou : toutotan kòmand lan poko make « rechaje », nou ka korije."
+    },
+    "refund": {
+      "q": "Èske m ka ranbouse ?",
+      "a": "Wi, si nou te pran peman ou men rechaj la pa t ka fèt (kont Meru pa jwenn, erè bò kote nou). Ranbousman an fèt an goud, sou bous ki te sèvi pou peye a, nan 48 èdtan. Yon rechaj ki deja voye sou yon kont Meru pa ka retire."
+    },
+    "track": {
+      "q": "Kijan pou m swiv kòmand mwen ?",
+      "a": "Kenbe referans MR- ki parèt lè kòmand lan kreye a. Sou paj « Swiv kòmand mwen », mete referans sa a ak nimewo WhatsApp ou te bay la : w ap jwenn estati a, resi a ak lyen peman an."
+    }
+  },
+  "stillStuck": {
+    "title": "Ou pa jwenn repons ou ?",
+    "body": "Ekri nou sou WhatsApp ak referans kòmand ou : se yon vrè moun k ap reponn ou ({hours}).",
+    "cta": "Ekri sipò a sou WhatsApp",
+    "message": "Bonjou, mwen gen yon kesyon"
+  }
+}

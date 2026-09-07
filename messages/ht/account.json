@@ -1,0 +1,22 @@
+{
+  "meta": {
+    "title": "Kòmand mwen yo",
+    "description": "Jwenn tout rechaj Meru ou te fè ak kont ou."
+  },
+  "title": "Kòmand mwen yo",
+  "lead": "Tout rechaj ou te fè ak kont sa a, pi resan an anlè.",
+  "signedInAs": "Ou konekte kòm {email}.",
+  "list": {
+    "receives": "{amount} sou Meru",
+    "view": "Gade swivi a"
+  },
+  "empty": {
+    "title": "Poko gen okenn kòmand",
+    "body": "Depi w rechaje kont Meru ou pandan ou konekte, kòmand lan ap parèt isit la ak swivi li.",
+    "cta": "Rechaje kont Meru mwen"
+  },
+  "guest": {
+    "note": "Kòmand ou te fè san ou pa t konekte pa parèt isit la : jwenn yo ak nimewo referans yo.",
+    "cta": "Swiv yon kòmand"
+  }
+}

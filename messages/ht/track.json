@@ -1,0 +1,29 @@
+{
+  "meta": {
+    "title": "Swiv kòmand mwen",
+    "description": "Jwenn rechaj Meru ou ak referans li ak nimewo WhatsApp ou."
+  },
+  "title": "Swiv kòmand mwen",
+  "lead": "Mete referans ou te resevwa lè ou te kreye kòmand lan ansanm ak nimewo WhatsApp ou te bay la. N ap louvri paj swivi a pou ou.",
+  "checking": "Nou pa t ka rekonèt kòmand ou otomatikman. Mete referans ou ak nimewo WhatsApp ou pou jwenn li. Si ou fèk peye, peman ou pa pèdi.",
+  "form": {
+    "reference": "Referans kòmand lan",
+    "referenceHint": "Li kòmanse ak MR- epi li gen 8 karaktè.",
+    "referencePlaceholder": "MR-7F3K2QAB",
+    "phone": "Nimewo WhatsApp",
+    "phoneHint": "Nimewo ou te bay lè ou t ap fè kòmand lan.",
+    "phonePlaceholder": "3700 1234",
+    "submit": "Gade kòmand mwen",
+    "submitting": "N ap chèche…"
+  },
+  "errors": {
+    "not_found": "Pa gen kòmand ki matche ak referans sa a ak nimewo sa a. Tcheke tou de, epi eseye ankò.",
+    "rate_limited": "Twòp esè. Tann kèk minit anvan ou eseye ankò."
+  },
+  "help": {
+    "title": "Ou pa gen referans ou ankò ?",
+    "body": "Ekri nou sou WhatsApp ak nimewo ou te sèvi pou kòmand lan ak montan ou te peye a : n ap jwenn li.",
+    "cta": "Ekri sipò a sou WhatsApp",
+    "message": "Bonjou, m ap chèche kòmand mwen"
+  }
+}

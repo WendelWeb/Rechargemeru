@@ -1,0 +1,22 @@
+{
+  "meta": {
+    "title": "Mes commandes",
+    "description": "Retrouvez toutes les recharges Meru passées depuis votre compte."
+  },
+  "title": "Mes commandes",
+  "lead": "Toutes les recharges passées depuis ce compte, la plus récente en premier.",
+  "signedInAs": "Connecté comme {email}.",
+  "list": {
+    "receives": "{amount} sur Meru",
+    "view": "Voir le suivi"
+  },
+  "empty": {
+    "title": "Aucune commande pour l'instant",
+    "body": "Dès que vous rechargerez votre compte Meru en étant connecté, la commande apparaîtra ici avec son suivi.",
+    "cta": "Recharger mon compte Meru"
+  },
+  "guest": {
+    "note": "Les commandes passées sans être connecté n'apparaissent pas ici : retrouvez-les avec leur référence.",
+    "cta": "Suivre une commande"
+  }
+}

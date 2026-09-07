@@ -1,0 +1,47 @@
+{
+  "meta": {
+    "title": "Kondisyon itilizasyon",
+    "description": "Kondisyon sèvis rechaj kont Meru an goud : pri, delè, idantifyan, ranbousman, done pèsonèl, okenn lyen ak Meru."
+  },
+  "title": "Kondisyon itilizasyon",
+  "lead": "Kondisyon sa yo esplike sèvis la, sa nou pran angajman pou nou fè, ak sa nou tann de ou.",
+  "updated": "Dènye mizajou : 6 septanm 2026.",
+  "sections": {
+    "service": {
+      "title": "Sèvis la",
+      "body": "{business} se yon sèvis endepandan ki resevwa yon peman an goud pa MonCash oswa NatCash epi ki voye, an echanj, montan ki koresponn lan an dola US sou kont Meru ou endike a. Se operatè a menm ki fè dènye transfè a sou kont Meru ou, ak men l. Sèvis la se pou moun ki gen laj majè, pou yon itilizasyon pèsonèl e legal."
+    },
+    "pricing": {
+      "title": "Pri, to ak frè",
+      "body": "To chanj lan ak chak frè parèt nan resi a anvan peman an. Montan an goud ki parèt lè ou konfime a se montan ou dwe a : li fikse sou kòmand lan e li pa chanje ankò. Montan nou aksepte yo soti {min} rive {max} pou chak kòmand, ak yon limit {walletLimit} pou chak peman mobil. To a ka chanje nenpòt lè ; si sa rive pandan w ap ranpli fòm nan, n ap montre ou yon nouvo resi anvan ou peye."
+    },
+    "delay": {
+      "title": "Delè rechaj la",
+      "body": "Depi MonCash oswa NatCash konfime peman an, rechaj la fèt ak men, anjeneral nan {sla} pandan lè sèvis la ({hours}). Delè sa a se yon estimasyon, se pa yon garanti : yon pwoblèm nan yon operatè mobil, nan Meru oswa nan rezo a ka fè l pran plis tan. N ap enfòme ou sou WhatsApp."
+    },
+    "account": {
+      "title": "Idantifyan Meru ak responsablite",
+      "body": "Se ou ki responsab pou idantifyan Meru a (imel oswa non itilizatè) ak non ou bay yo dwe kòrèk. Yon transfè Meru pa ka retounen : depi dola yo ale sou idantifyan ou te konfime a, yo pa ka reprann. Si ou wè yon erè, ekri nou tousuit sou WhatsApp ; toutotan kòmand lan poko make « rechaje », nou korije l."
+    },
+    "refund": {
+      "title": "Ranbousman",
+      "body": "Si nou te pran peman ou men rechaj la pa ka fèt, n ap ranbouse ou an goud, sou bous mobil ki te sèvi pou peye a, nan 48 èdtan. Nan ka sa a nou ranbouse frè sèvis la tou. Yon rechaj ki deja voye sou yon kont Meru pa ka anile ni reprann."
+    },
+    "expiry": {
+      "title": "Ekspirasyon ak anilasyon",
+      "body": "Yon kòmand ou pa peye ekspire otomatikman apre delè ki parèt sou paj swivi a ; lè sa a ou senpleman kreye yon lòt, ak to moman an. Si yon peman rive lakay nou apre ekspirasyon an, nou pran l an konsiderasyon kanmenm : kòmand lan pase nan verifikasyon manyèl epi nou kontakte ou."
+    },
+    "data": {
+      "title": "Done pèsonèl",
+      "body": "Nou kenbe sèlman sa sèvis la bezwen : non, nimewo WhatsApp, imel si ou bay youn, idantifyan Meru, ansanm ak istwa kòmand lan ak peman li yo. Done sa yo sèvi pou egzekite kòmand lan, pou avèti ou, pou reponn yon reklamasyon epi pou nou respekte obligasyon kontablite nou. Nou pa vann yo e nou pa sèvi ak yo pou piblisite. Paj piblik yon kòmand kache nimewo telefòn nan ak idantifyan Meru a ; detay konplè yo parèt sèlman sou aparèy ki te kreye kòmand lan, nan kont ki te pase kòmand lan, oswa apre nou verifye referans lan ak nimewo a. Ekri nou sou WhatsApp pou nenpòt demann korije oswa efase."
+    },
+    "notAffiliated": {
+      "title": "Okenn lyen ak Meru",
+      "body": "{business} pa gen okenn lyen, okenn patenarya e okenn manda ak Meru, Digicel (MonCash) oswa Natcom (NatCash). Mak nou site yo se pwopriyete mèt yo, e nou site yo sèlman pou esplike sèvis la. Kondisyon Meru yo ak kondisyon operatè mobil ou an aplike an plis kondisyon sa yo."
+    },
+    "support": {
+      "title": "Sipò ak reklamasyon",
+      "body": "Sipò a reponn sou WhatsApp ({hours}). Pou nenpòt reklamasyon, bay referans kòmand lan (MR-…) ak konfimasyon peman bous ou te voye ba ou a : se sa ki fè nou jwenn yon peman pi vit. Se lwa ayisyen ki aplike sou kondisyon sa yo."
+    }
+  }
+}

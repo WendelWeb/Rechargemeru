@@ -1,0 +1,93 @@
+{
+  "meta": {
+    "title": "Kòmand {reference}",
+    "description": "Swiv rechaj Meru ou."
+  },
+  "heading": "Kòmand {reference}",
+  "receiptTitle": "Resi kòmand ou an",
+  "transaction": "Nimewo tranzaksyon",
+  "alerts": {
+    "cancelled": "Peman an anile oswa li koupe. Ou ka eseye ankò, oswa kreye yon lòt kòmand.",
+    "sandbox": "Kòmand tès : pa gen okenn lajan reyèl k ap sikile e nou p ap voye okenn dola."
+  },
+  "states": {
+    "checking": {
+      "title": "N ap verifye peman ou",
+      "body": "Pa peye yon dezyèm fwa. Paj sa a ap mete tèt li ajou poukont li depi {method} reponn nou.",
+      "note": "Anjeneral sa pran mwens pase yon minit."
+    },
+    "pending": {
+      "title": "N ap tann peman ou",
+      "body": "Kòmand ou pare. Fini peman an ak {method} pou nou ka voye dola ou yo.",
+      "cta": "Peye {total} ak {method}",
+      "expiresAt": "Lyen peman sa a bon jiska {time}.",
+      "expiredTitle": "Lyen peman an ekspire",
+      "expiredBody": "Lyen sa a pa bon ankò. Kreye yon lòt kòmand : n ap kalkile to a ak frè yo ankò."
+    },
+    "paid": {
+      "title": "Peman resevwa",
+      "body": "Mèsi. Se operatè a menm ki voye dola yo sou kont Meru ou, anjeneral nan {sla} ({hours}).",
+      "note": "W ap resevwa yon mesaj WhatsApp depi rechaj la fèt."
+    },
+    "needs_review": {
+      "title": "Peman resevwa, n ap verifye",
+      "body": "Nou jwenn yon peman pou kòmand sa a, men li mande yon verifikasyon manyèl. N ap kontakte ou sou WhatsApp.",
+      "note": "Pa peye ankò : lajan ou byen anrejistre lakay nou."
+    },
+    "fulfilled": {
+      "title": "Rechaj la fèt",
+      "body": "Nou voye {usd} sou kont Meru ou. Tcheke balans ou nan aplikasyon Meru a.",
+      "meruReference": "Referans transfè Meru a : {reference}",
+      "note": "Si ou pa wè anyen apre kèk minit, ekri nou sou WhatsApp ak referans ou."
+    },
+    "failed": {
+      "title": "Kòmand lan echwe",
+      "body": "Kòmand sa a pa t rive fèt e nou pa t pran okenn lajan.",
+      "reason": "Rezon : {reason}"
+    },
+    "expired": {
+      "title": "Kòmand lan ekspire",
+      "body": "Delè pou peye a pase. Kreye yon lòt kòmand : n ap kalkile to a ak frè yo ankò.",
+      "note": "Si ou te peye kanmenm, ekri nou sou WhatsApp ak referans ou : n ap chèche peman an."
+    },
+    "cancelled": {
+      "title": "Kòmand lan anile",
+      "body": "Kòmand sa a anile. Nou pa t pran okenn lajan."
+    },
+    "refunded": {
+      "title": "Kòmand lan ranbouse",
+      "body": "Nou ranbouse ou {htg} sou bous {wallet}.",
+      "bodyPlain": "Kòmand sa a ranbouse sou bous ki te sèvi pou peye a."
+    }
+  },
+  "restart": "Kreye yon lòt kòmand",
+  "support": "Ekri sipò a sou WhatsApp",
+  "supportMessage": "Bonjou, kòmand {reference}",
+  "details": {
+    "title": "Enfòmasyon ou",
+    "name": "Non",
+    "phone": "WhatsApp",
+    "email": "Imel",
+    "meru": "Kont Meru",
+    "none": "Pa bay",
+    "masked": "Pou sekirite, enfòmasyon sa yo kache lè kòmand lan louvri sou yon lòt aparèy epi ou pa konekte nan kont ki te pase l la.",
+    "maskedCta": "Jwenn kòmand mwen"
+  },
+  "timeline": {
+    "title": "Dat",
+    "created": "Kòmand kreye",
+    "expires": "Peye anvan",
+    "paid": "Peman resevwa",
+    "fulfilled": "Dola voye"
+  },
+  "recheck": {
+    "cta": "Verifye ankò",
+    "busy": "N ap verifye…",
+    "polling": "N ap mande {method}…",
+    "stopped": "Nou poko wè peman ou. Verifye ankò, oswa ekri nou sou WhatsApp.",
+    "throttled": "Nou fèk sot verifye. Tann kèk segonn anvan ou eseye ankò.",
+    "unpaid": "Peman an poko rive nan {method}.",
+    "error": "Verifikasyon an pa t abouti. Eseye ankò nan yon ti moman.",
+    "updated": "Estati kòmand ou an chanje."
+  }
+}

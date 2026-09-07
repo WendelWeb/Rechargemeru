@@ -1,0 +1,47 @@
+{
+  "meta": {
+    "title": "Conditions d'utilisation",
+    "description": "Conditions du service de recharge de compte Meru en gourdes : prix, délais, identifiant, remboursement, données personnelles, non-affiliation."
+  },
+  "title": "Conditions d'utilisation",
+  "lead": "Ces conditions décrivent le service, ce que nous nous engageons à faire, et ce que nous attendons de vous.",
+  "updated": "Dernière mise à jour : 6 septembre 2026.",
+  "sections": {
+    "service": {
+      "title": "Le service",
+      "body": "{business} est un service indépendant qui reçoit un paiement en gourdes par MonCash ou NatCash et envoie, en échange, le montant correspondant en dollars US sur le compte Meru que vous indiquez. Le transfert final vers votre compte Meru est effectué manuellement par l'opérateur. Le service est réservé aux personnes majeures et à un usage personnel et licite."
+    },
+    "pricing": {
+      "title": "Prix, taux et frais",
+      "body": "Le taux de change et chaque frais sont affichés dans le reçu avant le paiement. Le montant en gourdes affiché au moment de la confirmation est le montant dû : il est figé sur la commande et ne change plus. Les montants acceptés vont de {min} à {max} par commande, dans la limite de {walletLimit} par paiement mobile. Le taux peut changer à tout moment ; si cela arrive pendant que vous remplissez le formulaire, un nouveau reçu vous est présenté avant tout paiement."
+    },
+    "delay": {
+      "title": "Délai de recharge",
+      "body": "Une fois le paiement confirmé par MonCash ou NatCash, la recharge est faite manuellement, généralement sous {sla} pendant les heures de service ({hours}). Ce délai est une estimation, pas une garantie : un incident chez un opérateur mobile, chez Meru ou une panne de réseau peut l'allonger. Nous vous tenons informé sur WhatsApp."
+    },
+    "account": {
+      "title": "Identifiant Meru et responsabilité",
+      "body": "Vous êtes responsable de l'exactitude de l'identifiant Meru (email ou nom d'utilisateur) et du nom que vous fournissez. Un transfert Meru est irréversible : une fois les dollars envoyés à l'identifiant que vous avez confirmé, ils ne peuvent plus être récupérés. Si vous constatez une erreur, écrivez-nous immédiatement sur WhatsApp ; tant que la commande n'est pas marquée « rechargée », nous corrigeons."
+    },
+    "refund": {
+      "title": "Remboursement",
+      "body": "Si votre paiement a été encaissé mais que la recharge ne peut pas être effectuée, nous vous remboursons en gourdes, sur le portefeuille mobile qui a servi à payer, sous 48 heures. Les frais du service sont remboursés dans ce cas. Une recharge déjà envoyée sur un compte Meru ne peut être ni annulée ni reprise."
+    },
+    "expiry": {
+      "title": "Expiration et annulation",
+      "body": "Une commande non payée expire automatiquement après le délai affiché sur la page de suivi ; il suffit alors d'en créer une nouvelle, au taux du moment. Si un paiement nous parvient après l'expiration, il est bien pris en compte : la commande passe en vérification manuelle et nous vous contactons."
+    },
+    "data": {
+      "title": "Données personnelles",
+      "body": "Nous conservons uniquement ce qui est nécessaire au service : nom, numéro WhatsApp, email si vous en donnez un, identifiant Meru, et l'historique de la commande et de ses paiements. Ces données servent à exécuter la commande, à vous prévenir, à répondre à une réclamation et à respecter nos obligations comptables. Elles ne sont ni vendues ni utilisées à des fins publicitaires. La page publique d'une commande masque le téléphone et l'identifiant Meru ; les détails complets n'apparaissent que sur l'appareil qui a créé la commande, dans le compte depuis lequel elle a été passée, ou après vérification de la référence et du numéro. Écrivez-nous sur WhatsApp pour toute demande de correction ou de suppression."
+    },
+    "notAffiliated": {
+      "title": "Aucune affiliation",
+      "body": "{business} n'est ni affilié, ni partenaire, ni mandaté par Meru, Digicel (MonCash) ou Natcom (NatCash). Les marques citées appartiennent à leurs propriétaires respectifs et ne sont mentionnées que pour décrire le service. Les conditions de Meru et celles de votre opérateur mobile s'appliquent en plus des présentes."
+    },
+    "support": {
+      "title": "Support et réclamations",
+      "body": "Le support répond sur WhatsApp ({hours}). Pour toute réclamation, indiquez la référence de la commande (MR-…) et la confirmation de paiement reçue de votre portefeuille : c'est ce qui permet de retrouver un paiement le plus vite. Le droit haïtien s'applique à ces conditions."
+    }
+  }
+}

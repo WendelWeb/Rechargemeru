@@ -1,0 +1,61 @@
+{
+  "brand": "Recharge Meru",
+  "tagline": "Rechargez votre compte Meru en dollars US avec MonCash ou NatCash.",
+  "skipToContent": "Aller au contenu",
+  "nav": {
+    "home": "Accueil",
+    "track": "Suivre ma commande",
+    "faq": "Questions fréquentes",
+    "terms": "Conditions",
+    "support": "Support WhatsApp"
+  },
+  "account": {
+    "signIn": "Se connecter",
+    "signUp": "Créer un compte",
+    "myOrders": "Mes commandes",
+    "menu": "Mon compte"
+  },
+  "footer": {
+    "notAffiliated": "{business} est un service indépendant. Il n'est affilié ni à Meru, ni à Digicel (MonCash), ni à Natcom (NatCash).",
+    "support": "Une question sur une commande ? Écrivez-nous sur WhatsApp, une vraie personne vous répond.",
+    "rights": "© {year} {business}. Tous droits réservés."
+  },
+  "trust": {
+    "feesVisible": "Les frais sont affichés avant de payer, sans surprise.",
+    "verified": "Chaque paiement est vérifié directement auprès de MonCash ou NatCash.",
+    "tracking": "Suivez votre commande à tout moment grâce à sa référence.",
+    "support": "Une vraie personne répond sur WhatsApp."
+  },
+  "sandbox": {
+    "title": "Mode test",
+    "banner": "Les paiements sont simulés : aucun argent réel ne circule et aucun dollar ne sera envoyé."
+  },
+  "method": {
+    "moncash": "MonCash",
+    "natcash": "NatCash"
+  },
+  "status": {
+    "pending_payment": "En attente de paiement",
+    "paid": "Paiement reçu",
+    "needs_review": "Vérification manuelle",
+    "fulfilled": "Rechargée",
+    "failed": "Échouée",
+    "expired": "Expirée",
+    "cancelled": "Annulée",
+    "refunded": "Remboursée"
+  },
+  "notFound": {
+    "title": "Page introuvable",
+    "body": "Cette page n'existe pas ou a été déplacée. Vérifiez l'adresse, ou revenez à l'accueil pour recharger votre compte Meru.",
+    "back": "Retour à l'accueil"
+  },
+  "switchLocale": "Changer de langue",
+  "localeNames": {
+    "fr": "Français",
+    "ht": "Kreyòl"
+  },
+  "copy": "Copier",
+  "copied": "Copié",
+  "currencyNote": "Les montants sont affichés en dollars américains ($ US) et en gourdes (HTG).",
+  "test": "TEST"
+}

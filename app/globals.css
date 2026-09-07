@@ -1,0 +1,103 @@
+@import "tailwindcss";
+
+/*
+ * Design tokens. One accent (sun) on an ink-and-paper base; mint and coral
+ * only ever mean "good" and "attention"; MonCash and NatCash keep their own
+ * brand colours for their marks and nothing else. Light theme only.
+ */
+@theme {
+  --color-ink: #0e1b3d;
+  --color-ink-hover: #182a5c;
+  --color-ink-soft: #4a5578;
+  --color-ink-muted: #6f7a95;
+  --color-paper: #ffffff;
+  --color-mist: #eef2f8;
+  --color-line: #d9e0ec;
+  --color-sun: #ffc531;
+  --color-sun-deep: #e8ad00;
+  --color-sun-soft: #fff3d1;
+  --color-mint: #159f6c;
+  --color-mint-deep: #0f7d54;
+  --color-mint-soft: #e1f5ec;
+  --color-coral: #dc3d43;
+  --color-coral-deep: #b92c32;
+  --color-coral-soft: #fdeaeb;
+  --color-moncash: #e4002b;
+  --color-natcash: #f7941d;
+
+  --radius-card: 1.25rem;
+  --shadow-card: 0 1px 2px rgb(14 27 61 / 0.05), 0 12px 32px -18px rgb(14 27 61 / 0.18);
+  --shadow-lift: 0 20px 44px -20px rgb(14 27 61 / 0.35);
+}
+
+/* Font families come from next/font (lib/fonts.ts) as CSS variables on <html>. */
+@theme inline {
+  --font-display: var(--font-bricolage), "Bricolage Grotesque", ui-sans-serif, system-ui, sans-serif;
+  --font-body: var(--font-figtree), Figtree, ui-sans-serif, system-ui, sans-serif;
+  --font-sans: var(--font-figtree), Figtree, ui-sans-serif, system-ui, sans-serif;
+}
+
+@layer base {
+  html {
+    color-scheme: light;
+    -webkit-text-size-adjust: 100%;
+    scroll-behavior: smooth;
+  }
+
+  body {
+    background-color: var(--color-paper);
+    color: var(--color-ink);
+    font-family: var(--font-body);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
+  }
+
+  h1,
+  h2,
+  h3,
+  h4 {
+    font-family: var(--font-display);
+    letter-spacing: -0.01em;
+    text-wrap: balance;
+  }
+
+  p {
+    text-wrap: pretty;
+  }
+
+  /* Keyboard focus is always visible: an ink ring, offset so it reads on any surface. */
+  :focus-visible {
+    outline: 3px solid var(--color-ink);
+    outline-offset: 3px;
+  }
+
+  [data-surface="dark"] :focus-visible {
+    outline-color: var(--color-sun);
+  }
+
+  ::selection {
+    background: rgb(255 197 49 / 0.55);
+    color: var(--color-ink);
+  }
+
+  /* Motion only ever answers an action, and none at all when the reader asks for none. */
+  @media (prefers-reduced-motion: reduce) {
+    html {
+      scroll-behavior: auto;
+    }
+
+    *,
+    ::before,
+    ::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+    }
+  }
+}
+
+/* Tabular, lining figures: amounts and references line up in columns. */
+@utility tnum {
+  font-variant-numeric: tabular-nums lining-nums;
+}

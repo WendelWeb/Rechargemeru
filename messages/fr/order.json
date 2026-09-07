@@ -1,0 +1,93 @@
+{
+  "meta": {
+    "title": "Commande {reference}",
+    "description": "Suivi de votre recharge Meru."
+  },
+  "heading": "Commande {reference}",
+  "receiptTitle": "Le reçu de votre commande",
+  "transaction": "Numéro de transaction",
+  "alerts": {
+    "cancelled": "Le paiement a été annulé ou interrompu. Vous pouvez réessayer, ou créer une nouvelle commande.",
+    "sandbox": "Commande de test : aucun argent réel ne circule et aucun dollar ne sera envoyé."
+  },
+  "states": {
+    "checking": {
+      "title": "Nous vérifions votre paiement",
+      "body": "Ne payez pas une deuxième fois. Cette page se met à jour toute seule dès que {method} nous répond.",
+      "note": "Cela prend en général moins d'une minute."
+    },
+    "pending": {
+      "title": "En attente de votre paiement",
+      "body": "Votre commande est prête. Terminez le paiement avec {method} pour que nous envoyions vos dollars.",
+      "cta": "Payer {total} avec {method}",
+      "expiresAt": "Ce lien de paiement est valable jusqu'à {time}.",
+      "expiredTitle": "Le lien de paiement a expiré",
+      "expiredBody": "Ce lien n'est plus valable. Créez une nouvelle commande : le taux et les frais seront recalculés."
+    },
+    "paid": {
+      "title": "Paiement reçu",
+      "body": "Merci. L'opérateur envoie vos dollars manuellement sur votre compte Meru, généralement sous {sla} ({hours}).",
+      "note": "Vous recevrez un message WhatsApp dès que la recharge est faite."
+    },
+    "needs_review": {
+      "title": "Paiement reçu, vérification en cours",
+      "body": "Nous avons bien un paiement pour cette commande, mais il demande une vérification manuelle. Nous vous contactons sur WhatsApp.",
+      "note": "Ne repayez pas : votre argent est bien enregistré chez nous."
+    },
+    "fulfilled": {
+      "title": "Recharge effectuée",
+      "body": "Nous avons envoyé {usd} sur votre compte Meru. Vérifiez votre solde dans l'application Meru.",
+      "meruReference": "Référence du transfert Meru : {reference}",
+      "note": "Si vous ne voyez rien après quelques minutes, écrivez-nous sur WhatsApp avec votre référence."
+    },
+    "failed": {
+      "title": "Commande échouée",
+      "body": "Cette commande n'a pas abouti et aucun paiement n'a été encaissé.",
+      "reason": "Raison : {reason}"
+    },
+    "expired": {
+      "title": "Commande expirée",
+      "body": "Le délai de paiement est passé. Créez une nouvelle commande : le taux et les frais seront recalculés.",
+      "note": "Si vous avez payé quand même, écrivez-nous sur WhatsApp avec votre référence : nous retrouvons le paiement."
+    },
+    "cancelled": {
+      "title": "Commande annulée",
+      "body": "Cette commande a été annulée. Aucun paiement n'a été encaissé."
+    },
+    "refunded": {
+      "title": "Commande remboursée",
+      "body": "Nous vous avons remboursé {htg} sur le portefeuille {wallet}.",
+      "bodyPlain": "Cette commande a été remboursée sur le portefeuille qui a servi à payer."
+    }
+  },
+  "restart": "Créer une nouvelle commande",
+  "support": "Écrire au support WhatsApp",
+  "supportMessage": "Bonjour, commande {reference}",
+  "details": {
+    "title": "Vos informations",
+    "name": "Nom",
+    "phone": "WhatsApp",
+    "email": "Email",
+    "meru": "Compte Meru",
+    "none": "Non renseigné",
+    "masked": "Par sécurité, ces informations sont masquées quand la commande est ouverte depuis un autre appareil et sans être connecté au compte qui l’a passée.",
+    "maskedCta": "Retrouver ma commande"
+  },
+  "timeline": {
+    "title": "Dates",
+    "created": "Commande créée",
+    "expires": "Paiement à faire avant",
+    "paid": "Paiement reçu",
+    "fulfilled": "Dollars envoyés"
+  },
+  "recheck": {
+    "cta": "Vérifier à nouveau",
+    "busy": "Vérification en cours…",
+    "polling": "Nous interrogeons {method}…",
+    "stopped": "Nous n'avons pas encore vu votre paiement. Vérifiez à nouveau, ou écrivez-nous sur WhatsApp.",
+    "throttled": "Nous venons de vérifier. Patientez quelques secondes avant de réessayer.",
+    "unpaid": "Le paiement n'est pas encore arrivé chez {method}.",
+    "error": "La vérification n'a pas abouti. Réessayez dans un instant.",
+    "updated": "Le statut de votre commande a été mis à jour."
+  }
+}

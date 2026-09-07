@@ -1,0 +1,29 @@
+{
+  "meta": {
+    "title": "Suivre ma commande",
+    "description": "Retrouvez votre recharge Meru avec sa référence et votre numéro WhatsApp."
+  },
+  "title": "Suivre ma commande",
+  "lead": "Entrez la référence reçue à la création de la commande et le numéro WhatsApp que vous avez indiqué. Nous vous ouvrons la page de suivi.",
+  "checking": "Nous n'avons pas pu identifier votre commande automatiquement. Entrez votre référence et votre numéro WhatsApp pour la retrouver. Si vous venez de payer, votre paiement n'est pas perdu.",
+  "form": {
+    "reference": "Référence de la commande",
+    "referenceHint": "Elle commence par MR- et contient 8 caractères.",
+    "referencePlaceholder": "MR-7F3K2QAB",
+    "phone": "Numéro WhatsApp",
+    "phoneHint": "Le numéro donné au moment de la commande.",
+    "phonePlaceholder": "3700 1234",
+    "submit": "Voir ma commande",
+    "submitting": "Recherche…"
+  },
+  "errors": {
+    "not_found": "Aucune commande ne correspond à cette référence et à ce numéro. Vérifiez les deux, puis réessayez.",
+    "rate_limited": "Trop de tentatives. Patientez quelques minutes avant de réessayer."
+  },
+  "help": {
+    "title": "Vous n'avez plus votre référence ?",
+    "body": "Écrivez-nous sur WhatsApp avec le numéro utilisé pour la commande et le montant payé : nous la retrouvons.",
+    "cta": "Écrire au support WhatsApp",
+    "message": "Bonjour, je cherche ma commande"
+  }
+}

@@ -1,0 +1,61 @@
+{
+  "brand": "Recharge Meru",
+  "tagline": "Rechaje kont Meru ou an dola US ak MonCash oswa NatCash.",
+  "skipToContent": "Ale nan kontni an",
+  "nav": {
+    "home": "Akèy",
+    "track": "Swiv kòmand mwen",
+    "faq": "Kesyon yo poze souvan",
+    "terms": "Kondisyon yo",
+    "support": "Sipò WhatsApp"
+  },
+  "account": {
+    "signIn": "Konekte",
+    "signUp": "Kreye yon kont",
+    "myOrders": "Kòmand mwen yo",
+    "menu": "Kont mwen"
+  },
+  "footer": {
+    "notAffiliated": "{business} se yon sèvis endepandan. Li pa gen okenn lyen ak Meru, ak Digicel (MonCash), ni ak Natcom (NatCash).",
+    "support": "Ou gen yon kesyon sou yon kòmand ? Ekri nou sou WhatsApp, se yon vrè moun k ap reponn ou.",
+    "rights": "© {year} {business}. Tout dwa rezève."
+  },
+  "trust": {
+    "feesVisible": "Frè yo parèt anvan ou peye, san okenn sipriz.",
+    "verified": "Chak peman verifye dirèkteman ak MonCash oswa NatCash.",
+    "tracking": "Swiv kòmand ou nenpòt lè ak referans li.",
+    "support": "Se yon vrè moun k ap reponn ou sou WhatsApp."
+  },
+  "sandbox": {
+    "title": "Mòd tès",
+    "banner": "Peman yo se senp tès : pa gen okenn lajan reyèl k ap sikile, e nou p ap voye okenn dola."
+  },
+  "method": {
+    "moncash": "MonCash",
+    "natcash": "NatCash"
+  },
+  "status": {
+    "pending_payment": "Ap tann peman",
+    "paid": "Peman resevwa",
+    "needs_review": "Verifikasyon manyèl",
+    "fulfilled": "Rechaje",
+    "failed": "Echwe",
+    "expired": "Ekspire",
+    "cancelled": "Anile",
+    "refunded": "Ranbouse"
+  },
+  "notFound": {
+    "title": "Paj sa a pa egziste",
+    "body": "Paj sa a pa egziste oswa li deplase. Verifye adrès la, oswa tounen lakay pou rechaje kont Meru ou.",
+    "back": "Tounen lakay"
+  },
+  "switchLocale": "Chanje lang",
+  "localeNames": {
+    "fr": "Français",
+    "ht": "Kreyòl"
+  },
+  "copy": "Kopye",
+  "copied": "Li kopye",
+  "currencyNote": "Montan yo parèt an dola ameriken (dola US) ak an goud (HTG).",
+  "test": "TÈS"
+}
