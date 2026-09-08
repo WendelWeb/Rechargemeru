@@ -31,6 +31,7 @@ function makeOrder(overrides: Partial<OrderRow> = {}): OrderRow {
     refundHtg: null,
     refundWallet: null,
     clerkUserId: null,
+    accountEmail: null,
     customerName: 'Jean Baptiste',
     customerPhone: '+50937001234',
     customerEmail: null,

@@ -25,9 +25,15 @@ Le code s'adapte tout seul :
   fenêtre de 24 h.
 
 Twilio, lui, envoie toujours le texte rendu (`Body`) : rien à approuver de notre côté — mais
-la politique WhatsApp reste la même, la fenêtre de 24 h s'applique aussi. Le **canal
-manuel** (`wa.me` depuis la fiche admin) n'est soumis à aucune de ces limites, puisque c'est
-vous qui écrivez.
+la politique WhatsApp reste la même, la fenêtre de 24 h s'applique aussi. Ses trois
+variables, et où les lire dans la console, sont en
+[section 9](#9-twilio--où-trouver-les-trois-valeurs). Le **canal manuel** (`wa.me` depuis la
+fiche admin) n'est soumis à aucune de ces limites, puisque c'est vous qui écrivez.
+
+Quand part un message ? À **chacune des deux étapes** qu'une commande traverse — sa
+**création** (le client doit encore payer) et son **paiement** (l'opérateur doit envoyer les
+dollars) — un email **et** un message WhatsApp partent à l'opérateur et au client. La liste
+exacte des événements se règle dans `/admin/parametres`.
 
 ---
 
@@ -63,6 +69,25 @@ vous qui écrivez.
 
 ## 3. Modèles client — français
 
+**Les seize modèles à faire approuver** : huit événements, deux langues chacun. Les corps
+exacts sont plus bas — français dans cette section, kreyòl en [section 4](#4-modèles-client--kreyòl).
+Les deux premières lignes sont celles que l'opérateur a demandées : un message **à la
+création** et un message **au paiement**, dans les deux langues.
+
+| Événement | Modèle français | Modèle kreyòl | Variables | Quand il part |
+|---|---|---|---|---|
+| `created` | `meru_created_fr` | `meru_created_ht` | 6 | à la création, la commande n'est pas encore payée |
+| `paid` | `meru_paid_fr` | `meru_paid_ht` | 6 | dès que le paiement est confirmé |
+| `fulfilled` | `meru_fulfilled_fr` | `meru_fulfilled_ht` | 6 | quand l'opérateur a envoyé les dollars |
+| `failed` | `meru_failed_fr` | `meru_failed_ht` | 5 | commande non aboutie |
+| `needs_review` | `meru_needs_review_fr` | `meru_needs_review_ht` | 3 | paiement reçu, vérification manuelle |
+| `expired` | `meru_expired_fr` | `meru_expired_ht` | 3 | commande expirée sans paiement |
+| `refunded` | `meru_refunded_fr` | `meru_refunded_ht` | 4 | remboursement effectué |
+| `reminder_24h` | `meru_reminder_24h_fr` | `meru_reminder_24h_ht` | 3 | relance ; **jamais envoyé au client** par défaut |
+
+Si vous ne devez en soumettre que quatre, soumettez `meru_created_fr`, `meru_created_ht`,
+`meru_paid_fr` et `meru_paid_ht` : ce sont les deux étapes que tout client traverse.
+
 Locale `fr` : c'est la langue par défaut des commandes.
 
 ### `meru_created_fr` — commande créée
@@ -77,7 +102,7 @@ Locale `fr` : c'est la langue par défaut des commandes.
 | 6 | Lien de suivi | `https://recharge-meru.com/fr/commande/MR-7F3K2QAB` |
 
 ```
-Bonjour {{1}}, votre commande {{2}} est créée : {{3}} sur votre compte Meru pour {{4}} par {{5}}. Terminez le paiement, puis suivez votre commande ici : {{6}}
+Bonjour {{1}}, votre commande {{2}} est créée : {{3}} sur votre compte Meru pour {{4}} par {{5}}. Terminez le paiement, gardez cette référence, puis suivez votre commande ici : {{6}}
 ```
 
 ### `meru_paid_fr` — paiement reçu
@@ -184,7 +209,7 @@ arrivent déjà écrits « 20 dola US ».
 ### `meru_created_ht`
 
 ```
-Bonjou {{1}}, kòmand ou {{2}} kreye : {{3}} sou kont Meru ou pou {{4}} pa {{5}}. Fini peman an, epi swiv kòmand ou isit la : {{6}}
+Bonjou {{1}}, kòmand ou {{2}} kreye : {{3}} sou kont Meru ou pou {{4}} pa {{5}}. Fini peman an, kenbe referans sa a, epi swiv kòmand ou isit la : {{6}}
 ```
 
 ### `meru_paid_ht`
@@ -251,11 +276,16 @@ variables (12 contre 6).
    trouvent hors fenêtre de 24 h.
 2. Faites reposer vos alertes **admin** sur l'**email** (obligatoire) et le **canal manuel**.
    Concrètement, avec Meta actif, laissez *Paramètres → numéros WhatsApp admin* **vide**
-   pour les événements partagés (`paid`, `needs_review`, `failed` par défaut).
+   pour les événements partagés — par défaut `created` et `paid` (les deux étapes, envoyées
+   aux deux publics), ainsi que `needs_review` et `failed`.
 3. Si vous voulez malgré tout une alerte admin WhatsApp modélisée, choisissez un événement
-   **absent de la matrice client** — par défaut `reminder_24h` (et `created`, `expired`,
-   `fulfilled`, `refunded` si vous les retirez côté client) — et écrivez son modèle `fr`
-   avec le corps admin correspondant.
+   **absent de la matrice client** — par défaut `reminder_24h` (et `expired`, `fulfilled`,
+   `refunded` si vous les retirez côté client) — et écrivez son modèle `fr` avec le corps
+   admin correspondant.
+
+Avec **Twilio**, rien de tout cela ne s'applique : le texte rendu part tel quel, l'alerte
+admin et le message client ne partagent aucun nom de modèle, et les numéros WhatsApp de
+l'opérateur peuvent donc rester renseignés pour les deux étapes.
 
 Les corps admin, si vous en enregistrez :
 
@@ -264,7 +294,7 @@ Les corps admin, si vous en enregistrez :
 | `paid` | 12 | `💰 PAYÉE {{1}} — envoyer {{2}} sur Meru. Reçu {{3}} (attendu {{4}}) par {{5}}, tx {{6}}, payeur {{7}}. Compte Meru : {{8}} {{9}} — {{10}}, tél. {{11}}. Ouvrir : {{12}}` |
 | `needs_review` | 13 | `🔍 À VÉRIFIER {{1}} — {{2}}. {{3}} ({{4}}) par {{5}}, reçu {{6}}, tx {{7}}, payeur {{8}}. Compte Meru : {{9}} {{10}} — {{11}}, tél. {{12}}. Ouvrir : {{13}}` |
 | `failed` | 8 | `⚠️ Échec {{1}} : {{2}}. {{3}} ({{4}}) par {{5}} — {{6}}, tél. {{7}}. Ouvrir : {{8}}` |
-| `created` | 10 | `🆕 Nouvelle commande {{1}} — {{2}} ({{3}}) par {{4}}, expire le {{5}}. Compte Meru : {{6}} {{7}} — {{8}}, tél. {{9}}. Ouvrir : {{10}}` |
+| `created` | 10 | `🆕 Nouvelle commande {{1}} — {{2}} ({{3}}) par {{4}}, en attente de paiement, expire le {{5}}. Compte Meru : {{6}} {{7}} — {{8}}, tél. {{9}}. Ouvrir : {{10}}` |
 | `fulfilled` | 6 | `✅ Rechargée {{1}} — {{2}} envoyés sur {{3}} ({{4}}) pour {{5}}. Ouvrir : {{6}}` |
 | `expired` | 8 | `⌛ Expirée {{1}} — {{2}} ({{3}}) par {{4}}, jamais payée (échéance {{5}}). {{6}}, tél. {{7}}. Ouvrir : {{8}}` |
 | `refunded` | 5 | `↩️ Remboursée {{1}} — {{2}} sur {{3}} pour {{4}}. Ouvrir : {{5}}` |
@@ -375,14 +405,91 @@ Le destinataire s'écrit **sans le `+`**. Les erreurs les plus fréquentes :
 
 ---
 
-## 9. Et sans Meta ?
+## 9. Twilio — où trouver les trois valeurs
 
-- **Twilio** — aucun modèle à créer : le texte rendu est envoyé tel quel. En **bac à sable**
-  Twilio, seuls les numéros ayant envoyé « join … » reçoivent, l'autorisation expire toutes
-  les **72 heures**, et les messages **clients** sont volontairement `skipped` par
-  l'application. Utilisable pour vos propres alertes, pas pour les clients.
+Avec Twilio il n'y a **aucun modèle à créer** : l'application envoie le texte déjà rendu
+(`Body`), en français ou en kreyòl selon la commande. Trois variables suffisent.
+
+### 9.1 `TWILIO_ACCOUNT_SID` et `TWILIO_AUTH_TOKEN`
+
+1. Ouvrez [console.twilio.com](https://console.twilio.com) et connectez-vous.
+2. Sur la page d'accueil de la console, encadré **Account Info** (en bas de la page projet).
+3. **Account SID** — une chaîne de 34 caractères qui commence par `AC`. Copiez-la telle
+   quelle dans `TWILIO_ACCOUNT_SID`.
+4. **Auth Token** — masqué : cliquez sur l'œil (« Show ») ou sur **Copy**. C'est le mot de
+   passe du compte : il ouvre l'envoi de SMS payants, ne le mettez jamais dans un fichier
+   suivi par git ni dans une capture d'écran. Collez-le dans `TWILIO_AUTH_TOKEN`.
+   S'il a fuité : **Account → API keys & tokens → Auth tokens → Request a secondary token**,
+   puis promotion, et remplacez la valeur ici.
+
+L'application n'envoie ces deux valeurs qu'à `api.twilio.com`, en authentification **Basic**
+(SID en utilisateur, jeton en mot de passe) ; elles ne sont jamais journalisées ni renvoyées
+au navigateur, et un message d'erreur Twilio ne les contient jamais.
+
+### 9.2 `TWILIO_WHATSAPP_FROM` — deux cas, très différents
+
+**a) Bac à sable (gratuit, immédiat, ADMIN SEULEMENT)**
+
+1. **Messaging → Try it out → Send a WhatsApp message**.
+2. Twilio affiche un numéro (`+1 415 523 8886`) et un code du type `join <deux-mots>`.
+3. Depuis **votre** WhatsApp, envoyez ce code à ce numéro. Twilio répond « connected ».
+4. `TWILIO_WHATSAPP_FROM=+14155238886` et `TWILIO_SANDBOX=true`.
+
+Ce mode ne parle qu'aux numéros qui ont fait « join », et cette autorisation **expire toutes
+les 72 heures**. L'application le sait : les messages **clients** ne sont pas tentés, ils
+sont journalisés dans `/admin/notifications` avec la raison en toutes lettres — « Bac à sable
+Twilio : seuls les numéros ayant envoyé "join" reçoivent, les messages client ne partent
+pas ». `/admin/sante` l'affiche en orange. Les clients restent prévenus **par email** et par
+le bouton **« Envoyer sur WhatsApp »** de la fiche de commande.
+
+**b) Numéro WhatsApp approuvé (le vrai mode, celui qui écrit aux clients)**
+
+1. **Messaging → Senders → WhatsApp senders → New WhatsApp sender**.
+2. Suivez l'enregistrement Meta (profil d'entreprise, numéro qui n'est **pas** déjà utilisé
+   par l'application WhatsApp, vérification par code).
+3. Une fois le sender **approuvé**, copiez son numéro dans `TWILIO_WHATSAPP_FROM` (format
+   international, ex. `+50937001234`) et mettez `TWILIO_SANDBOX=false`.
+4. Les modèles restent utiles hors fenêtre de 24 h : Twilio les gère sous le nom de
+   *Content Templates* (**Content Template Builder**). L'application, elle, envoie du texte ;
+   avec Twilio, gardez donc l'email comme canal de référence pour ce qui sort de la fenêtre.
+
+Le préfixe `whatsapp:` est **accepté et retiré** (`whatsapp:+14155238886` fonctionne), tout
+comme les espaces, points, tirets et parenthèses d'un copier-coller de la console. Ce qui
+n'est pas accepté : un numéro sans `+` et sans indicatif — `/admin/sante` affiche alors
+« TWILIO_WHATSAPP_FROM n'est pas un numéro au format international » et aucun message ne
+part (raison `bad_sender` dans le journal), plutôt qu'un code Twilio 21212 dix secondes plus
+tard.
+
+### 9.3 Choisir Twilio quand les deux fournisseurs sont configurés
+
+`WHATSAPP_PROVIDER=twilio`. Vide, Meta gagne s'il est configuré. Un nom sans identifiants
+**désactive** WhatsApp — jamais de bascule silencieuse vers l'autre fournisseur.
+
+### 9.4 Vérifier
+
+`/admin/sante` → **Envoyer un WhatsApp de test**, puis `/admin/notifications` : `sent` avec
+l'identifiant `SM…` renvoyé par Twilio, ou `failed` avec le code Twilio et son message
+(`HTTP 400 — 63016 — Failed to send freeform message`, par exemple). Les codes les plus
+fréquents :
+
+| Code Twilio | Cause | Correction |
+|---|---|---|
+| `21211` | Le numéro destinataire n'est pas au format E.164 | Le téléphone de la commande doit commencer par `+` |
+| `21212` | `TWILIO_WHATSAPP_FROM` invalide | Écrire l'expéditeur en `+indicatif…` |
+| `63015` / `63016` | Hors fenêtre de 24 h sans modèle approuvé | Passer par un *Content Template* Twilio, ou compter sur l'email |
+| `63007` | L'expéditeur n'est pas un sender WhatsApp du compte | Terminer l'enregistrement du sender (§9.2 b) |
+| `20003` | Authentification refusée | SID ou jeton faux, ou jeton régénéré |
+
+---
+
+## 10. Les deux autres canaux
+
 - **Canal manuel** — le bouton « Envoyer sur WhatsApp » de chaque fiche de commande ouvre
   `wa.me` avec le message déjà écrit ; il suffit d'appuyer sur envoyer. L'envoi est
-  journalisé (`whatsapp_manual`) pour que la commande garde une trace.
+  journalisé (`whatsapp_manual`) pour que la commande garde une trace. Aucune fenêtre de
+  24 h ne s'y applique, puisque c'est vous qui écrivez.
 - **Email** — le canal qui ne dépend d'aucune fenêtre : c'est lui qui garantit qu'une
-  commande payée finit par être vue.
+  commande payée finit par être vue. Il part à **trois** destinataires : l'opérateur (chaque
+  adresse de *Paramètres → Emails de l'opérateur*), l'adresse saisie dans le formulaire de
+  commande, et celle du compte client quand la commande a été passée en étant connecté —
+  dédoublonnées, une seule fois quand les deux ne font qu'une.

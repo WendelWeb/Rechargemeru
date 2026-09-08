@@ -59,10 +59,14 @@ export const platformSettings = pgTable('platform_settings', {
   orderTtlMinutes: integer('order_ttl_minutes').notNull().default(30),
   adminEmails: jsonb('admin_emails').$type<string[]>().notNull().default([]),
   adminWhatsappNumbers: jsonb('admin_whatsapp_numbers').$type<string[]>().notNull().default([]),
+  // Same list as `DEFAULT_SETTINGS.notifyAdminEvents`, `created` included:
+  // the operator is told when an order enters (awaiting payment) and again
+  // when it is paid. The two must not drift — a row created without this
+  // column would otherwise contradict the code defaults the app falls back to.
   notifyAdminEvents: jsonb('notify_admin_events')
     .$type<NotificationTemplate[]>()
     .notNull()
-    .default(['paid', 'needs_review', 'failed']),
+    .default(['created', 'paid', 'needs_review', 'failed']),
   notifyCustomerEvents: jsonb('notify_customer_events')
     .$type<NotificationTemplate[]>()
     .notNull()
@@ -116,6 +120,13 @@ export const orders = pgTable(
     // Clerk user id when the customer was signed in; null for a guest order,
     // which stays the default path — an account only links past orders together.
     clerkUserId: text('clerk_user_id'),
+    // The **verified** address of that Clerk account, read server-side at
+    // creation and never from the request body; null for a guest order. It is
+    // kept apart from `customerEmail` (what the customer typed into the form)
+    // because they are two different promises: one is where the account lives,
+    // the other is where this customer asked to be written. Notifications go
+    // to both, de-duplicated.
+    accountEmail: text('account_email'),
     customerName: text('customer_name').notNull(),
     // E.164, e.g. +50937001234.
     customerPhone: text('customer_phone').notNull(),

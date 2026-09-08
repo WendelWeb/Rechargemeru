@@ -190,9 +190,9 @@ function adminDraft(order: TemplateOrder, template: NotificationTemplate, ctx: A
       };
     case 'created':
       return {
-        subject: `Nouvelle commande ${ref} — ${usd}`,
-        heading: 'Nouvelle commande',
-        text: `🆕 Nouvelle commande ${ref} — ${usd} (${htg}) par ${method}, expire le ${expires}. Compte Meru : ${meruType} ${meru} — ${name}, tél. ${phone}. Ouvrir : ${url}`,
+        subject: `Nouvelle commande ${ref} — ${usd}, en attente de paiement`,
+        heading: 'Nouvelle commande — en attente de paiement',
+        text: `🆕 Nouvelle commande ${ref} — ${usd} (${htg}) par ${method}, en attente de paiement, expire le ${expires}. Compte Meru : ${meruType} ${meru} — ${name}, tél. ${phone}. Ouvrir : ${url}`,
         params: [ref, usd, htg, method, expires, meruType, meru, name, phone, url],
         cta,
       };
@@ -248,8 +248,8 @@ function customerDraft(order: TemplateOrder, template: NotificationTemplate, ctx
         subject: ht ? `Kòmand ${ref} kreye — ${usd}` : `Commande ${ref} créée — ${usd}`,
         heading: ht ? 'Kòmand kreye' : 'Commande créée',
         text: ht
-          ? `Bonjou ${name}, kòmand ou ${ref} kreye : ${usd} sou kont Meru ou pou ${htg} pa ${method}. Fini peman an, epi swiv kòmand ou isit la : ${url}`
-          : `Bonjour ${name}, votre commande ${ref} est créée : ${usd} sur votre compte Meru pour ${htg} par ${method}. Terminez le paiement, puis suivez votre commande ici : ${url}`,
+          ? `Bonjou ${name}, kòmand ou ${ref} kreye : ${usd} sou kont Meru ou pou ${htg} pa ${method}. Fini peman an, kenbe referans sa a, epi swiv kòmand ou isit la : ${url}`
+          : `Bonjour ${name}, votre commande ${ref} est créée : ${usd} sur votre compte Meru pour ${htg} par ${method}. Terminez le paiement, gardez cette référence, puis suivez votre commande ici : ${url}`,
         params: [name, ref, usd, htg, method, url],
         cta,
       };

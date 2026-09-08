@@ -345,7 +345,9 @@ délivre que des **modèles approuvés**.
 ## 8. Twilio WhatsApp — `TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN`, `TWILIO_WHATSAPP_FROM`, `TWILIO_SANDBOX`
 
 Alternative sans modèles à faire approuver : Twilio envoie le texte rendu. Pratique pour
-les alertes **admin** dès le premier jour.
+les alertes **admin** dès le premier jour. La marche à suivre écran par écran — où lire
+chaque valeur dans la console, et les codes d'erreur Twilio — est dans
+`docs/whatsapp-templates.md` §9.
 
 1. Compte sur **twilio.com**. Le tableau de bord affiche **Account SID** (`AC…`) et
    **Auth Token**.

@@ -26,6 +26,7 @@ function makeOrder(overrides: Partial<OrderRow> = {}): OrderRow {
     refundHtg: null,
     refundWallet: null,
     clerkUserId: null,
+    accountEmail: null,
     customerName: 'Jean Baptiste',
     customerPhone: '+50937001234',
     customerEmail: 'jean@mail.com',
@@ -64,7 +65,15 @@ describe('toPublicOrder', () => {
     expect(p.hasRedirect).toBe(true);
     expect(p.orderId).toBe('33333333-3333-4333-8333-333333333333');
     const keys = Object.keys(p);
-    for (const hidden of ['customerName', 'customerPhone', 'customerEmail', 'meruAccount', 'redirectUrl', 'meruReference']) {
+    for (const hidden of [
+      'customerName',
+      'customerPhone',
+      'customerEmail',
+      'accountEmail',
+      'meruAccount',
+      'redirectUrl',
+      'meruReference',
+    ]) {
       expect(keys).not.toContain(hidden);
     }
   });
@@ -116,6 +125,19 @@ describe('toFullOrder', () => {
     expect(f.fulfilledUsdCents).toBe(2000);
     expect(f.redirectUrl).toBe('https://pay.example/x');
     expect(f.maskedPhone).toBe('+509 •••• 1234');
+  });
+
+  it('carries the account address the order was placed from, which the public view never names', () => {
+    const signedIn = makeOrder({ clerkUserId: 'user_owner', accountEmail: 'proprietaire@compte.com' });
+    expect(toFullOrder(signedIn, null, NOW).accountEmail).toBe('proprietaire@compte.com');
+
+    const masked = toPublicOrder(signedIn, null, NOW);
+    expect(Object.keys(masked)).not.toContain('accountEmail');
+    expect(JSON.stringify(masked)).not.toContain('proprietaire@compte.com');
+  });
+
+  it('leaves a guest order without an account address', () => {
+    expect(toFullOrder(makeOrder(), null, NOW).accountEmail).toBeNull();
   });
 });
 

@@ -251,7 +251,7 @@ export function SettingsForm({ settings }: SettingsFormProps) {
 
       <Section
         title="Notifications"
-        description="L’email est le canal qui déclenche vraiment une recharge : gardez au moins une adresse d’opérateur."
+        description="Chaque événement coché part par email ET par WhatsApp : à vous sur les adresses et numéros ci-dessous, et au client sur son WhatsApp, sur l’adresse saisie dans le formulaire et sur celle de son compte quand il était connecté (une seule fois si les deux sont identiques). L’email est le canal qui déclenche vraiment une recharge : gardez au moins une adresse d’opérateur."
       >
         <div className="grid gap-4 sm:grid-cols-2">
           <FieldBlock
@@ -290,14 +290,14 @@ export function SettingsForm({ settings }: SettingsFormProps) {
           <CheckboxGrid
             name="notifyAdminEvents"
             legend="Ce qui alerte l’opérateur"
-            description="Décochez avec prudence : « Paiement reçu » est ce qui vous dit d’envoyer les dollars."
+            description="Décochez avec prudence : « Commande créée » vous prévient qu’une commande entre, en attente de paiement, et « Paiement reçu » est ce qui vous dit d’envoyer les dollars."
             options={templateOptions}
             selected={settings.notifyAdminEvents}
           />
           <CheckboxGrid
             name="notifyCustomerEvents"
             legend="Ce que reçoit le client"
-            description="Envoyé dans la langue de sa commande, en français ou en kreyòl."
+            description="Envoyé dans la langue de sa commande, en français ou en kreyòl, sur son WhatsApp et sur ses adresses email."
             options={templateOptions.filter((o) => o.value !== 'reminder_24h')}
             selected={settings.notifyCustomerEvents}
           />

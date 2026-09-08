@@ -110,9 +110,13 @@
     "track": "Suivre cette commande",
     "support": "Écrire au support WhatsApp",
     "supportMessage": "Bonjour, commande {reference}",
-    "pay": "Payer {total}",
-    "payWith": "avec {method}",
-    "redirecting": "Ouverture de {method}…",
+    "redirect": {
+      "status": "Redirection vers {method}…",
+      "returned": "Vous êtes revenu ici : reprenez le paiement ci-dessous, ou vérifiez l'état de votre commande.",
+      "fallback": "Si rien ne se passe, appuyez ici pour payer",
+      "fallbackDetail": "{total} avec {method}",
+      "hint": "Ne fermez pas cette page : après le paiement, {method} vous ramène sur le suivi de votre commande."
+    },
     "expires": "Ce lien de paiement est valable jusqu'à {time}. Passé ce délai, il faudra créer une nouvelle commande.",
     "sandbox": "Commande de test : le paiement sera simulé et aucun dollar ne sera envoyé."
   },

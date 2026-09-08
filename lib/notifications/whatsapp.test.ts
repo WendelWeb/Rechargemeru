@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { pickWhatsAppProvider, sendWhatsApp, whatsappConfigured, whatsappLabel, type WhatsAppMessage } from './whatsapp';
 import { metaTemplateName } from './whatsapp/meta';
-import { twilioSandbox } from './whatsapp/twilio';
+import { twilioConfigured, twilioSandbox, twilioSenderValid } from './whatsapp/twilio';
 
 const saved = { ...process.env };
 const WHATSAPP_ENV = [
@@ -103,6 +103,33 @@ describe('configuration helpers', () => {
     expect(twilioSandbox()).toBe(true);
     expect(whatsappLabel()).toContain('Twilio');
   });
+
+  it('accepts the sandbox flag however the operator wrote it', () => {
+    setTwilio(false);
+    for (const value of ['true', 'TRUE', ' True ', '1', 'yes']) {
+      process.env.TWILIO_SANDBOX = value;
+      expect(twilioSandbox(), value).toBe(true);
+    }
+    for (const value of ['false', 'FALSE', '0', 'no', '']) {
+      process.env.TWILIO_SANDBOX = value;
+      expect(twilioSandbox(), value).toBe(false);
+    }
+  });
+
+  it('reads the sender through a console copy-paste and reports a typo', () => {
+    process.env.TWILIO_ACCOUNT_SID = 'ACxxxxxxxx';
+    process.env.TWILIO_AUTH_TOKEN = 'secret-token';
+    // The Twilio console shows the sandbox number spaced out, with the prefix.
+    process.env.TWILIO_WHATSAPP_FROM = 'whatsapp:+1 (415) 523-8886';
+    expect(twilioConfigured()).toBe(true);
+    expect(twilioSenderValid()).toBe(true);
+    expect(twilioSandbox()).toBe(true);
+
+    process.env.TWILIO_WHATSAPP_FROM = '509 3700 1234';
+    expect(twilioConfigured()).toBe(true);
+    // Configured but unusable: /admin/sante says so instead of reading « off ».
+    expect(twilioSenderValid()).toBe(false);
+  });
 });
 
 describe('sendWhatsApp', () => {
@@ -138,6 +165,49 @@ describe('sendWhatsApp', () => {
     expect(body.get('Body')).toBe('Bonjour Jean, paiement reçu.');
     const headers = init.headers as Record<string, string>;
     expect(headers.Authorization.startsWith('Basic ')).toBe(true);
+  });
+
+  it('sends to a real Twilio number with both numbers prefixed and the form body', async () => {
+    setTwilio(false);
+    const fetchMock = vi.fn(async () => jsonResponse(201, { sid: 'SM456', status: 'queued' }));
+    vi.stubGlobal('fetch', fetchMock);
+    const r = await sendWhatsApp(message({ audience: 'customer' }));
+    expect(r).toEqual({ sent: true, skipped: false, id: 'SM456' });
+    const [, init] = fetchMock.mock.calls[0] as unknown as [string, RequestInit];
+    const headers = init.headers as Record<string, string>;
+    expect(headers['Content-Type']).toBe('application/x-www-form-urlencoded');
+    // Basic auth: the account SID as user, the auth token as password.
+    expect(Buffer.from(headers.Authorization.replace('Basic ', ''), 'base64').toString()).toBe('ACxxxxxxxx:secret-token');
+    const body = new URLSearchParams(String(init.body));
+    expect(body.get('From')).toBe('whatsapp:+15005550006');
+    expect(body.get('To')).toBe('whatsapp:+50937001234');
+    expect(init.signal).toBeInstanceOf(AbortSignal);
+  });
+
+  it('refuses a malformed TWILIO_WHATSAPP_FROM before calling Twilio', async () => {
+    process.env.WHATSAPP_PROVIDER = 'twilio';
+    process.env.TWILIO_ACCOUNT_SID = 'ACxxxxxxxx';
+    process.env.TWILIO_AUTH_TOKEN = 'secret-token';
+    process.env.TWILIO_WHATSAPP_FROM = '509 3700';
+    const fetchMock = vi.fn();
+    vi.stubGlobal('fetch', fetchMock);
+    const r = await sendWhatsApp(message({ audience: 'admin' }));
+    expect(r).toEqual({ sent: false, skipped: false, error: 'bad_sender' });
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it('keeps the Twilio error code in the message and never the auth token', async () => {
+    setTwilio(false);
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () => jsonResponse(400, { code: 63016, message: 'Failed to send freeform message', status: 400 })),
+    );
+    const r = await sendWhatsApp(message());
+    expect(r.sent).toBe(false);
+    expect(r.error).toContain('HTTP 400');
+    expect(r.error).toContain('63016');
+    expect(r.error).toContain('Failed to send freeform message');
+    expect(r.error).not.toContain('secret-token');
   });
 
   it('sends a Meta template message when a template name is mapped', async () => {

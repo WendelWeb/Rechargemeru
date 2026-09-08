@@ -13,10 +13,12 @@
  * handful of tries per person). Both are in-memory and per-instance: a
  * speed bump, not a quota (see lib/rate-limit).
  *
- * WHO IS ORDERING: the Clerk user id is read from the session server-side and
- * never from the body, so no request can file an order under somebody else's
- * account. There is nothing to read for a guest — the ordinary case — and the
- * order is then created exactly as it always was.
+ * WHO IS ORDERING: the Clerk user id **and the account's verified email** are
+ * read from the session server-side and never from the body, so no request can
+ * file an order under somebody else's account — nor have the confirmations
+ * sent to an address of its choosing. There is nothing to read for a guest —
+ * the ordinary case — and the order is then created exactly as it always was,
+ * with `accountEmail` left null.
  *
  * WHAT NEVER LEAVES THIS ROUTE: provider messages. A failure answers with a
  * stable machine code the UI translates (`home.errors.*`); the raw reason is
@@ -26,7 +28,7 @@
  */
 import { NextResponse, type NextRequest } from 'next/server';
 import { currentAdmin } from '@/lib/auth/admin';
-import { currentUserId } from '@/lib/auth/clerk';
+import { currentUserEmail, currentUserId } from '@/lib/auth/clerk';
 import { dbConfigured } from '@/lib/env';
 import { ORDER_COOKIE, orderCookieOptions } from '@/lib/orders/cookie';
 import { createOrder, createOrderSchema, type CreateOrderError } from '@/lib/orders/create';
@@ -107,13 +109,23 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     return NextResponse.json({ ok: false, error: 'rate_limited' }, { status: 429, headers: NO_STORE });
   }
 
-  const [admin, clerkUserId] = await Promise.all([currentAdmin(), currentUserId()]);
+  // `currentUserEmail()` costs a guest nothing (the session is checked first)
+  // and shares one memoised read of the account with `currentAdmin()`. It only
+  // ever returns an address Clerk has proved.
+  const [admin, clerkUserId, accountEmail] = await Promise.all([
+    currentAdmin(),
+    currentUserId(),
+    currentUserEmail(),
+  ]);
 
   const result = await createOrder({
     ...parsed.data,
     origin: req.nextUrl.origin,
     hasAdminSession: admin !== null,
     clerkUserId,
+    // After the spread on purpose: whatever the body carried is overwritten
+    // by the session's own answer (Zod strips the key, this makes it moot).
+    accountEmail: clerkUserId === null ? null : accountEmail,
   });
 
   if (!result.ok) {

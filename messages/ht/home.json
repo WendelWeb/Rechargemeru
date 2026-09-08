@@ -110,9 +110,13 @@
     "track": "Swiv kòmand sa a",
     "support": "Ekri sipò a sou WhatsApp",
     "supportMessage": "Bonjou, kòmand {reference}",
-    "pay": "Peye {total}",
-    "payWith": "ak {method}",
-    "redirecting": "N ap louvri {method}…",
+    "redirect": {
+      "status": "N ap voye ou sou {method}…",
+      "returned": "Ou tounen isit la : rekòmanse peman an anba a, oswa tcheke eta kòmand ou.",
+      "fallback": "Si anyen pa pase, peze isit la pou peye",
+      "fallbackDetail": "{total} ak {method}",
+      "hint": "Pa fèmen paj sa a : apre peman an, {method} ap remennen ou sou paj swivi kòmand ou."
+    },
     "expires": "Lyen peman sa a bon jiska {time}. Apre lè sa a, w ap bezwen kreye yon lòt kòmand.",
     "sandbox": "Kòmand tès : peman an ap senp senple epi nou p ap voye okenn dola."
   },

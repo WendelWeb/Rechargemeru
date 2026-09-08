@@ -115,6 +115,17 @@ describe('buildAdminMessage', () => {
     expect(later.text.startsWith('⚠️ Échouée MR-7F3K2QAB : client injoignable')).toBe(true);
   });
 
+  it('created says an order is in, still unpaid, and names everything needed to follow it', () => {
+    const m = buildAdminMessage(makeOrder({ status: 'pending_payment', paidHtg: null }), 'created', adminCtx);
+    const text = norm(m.text);
+    expect(text.startsWith('🆕 Nouvelle commande MR-7F3K2QAB')).toBe(true);
+    expect(text).toContain('20 $ US (2 985 HTG) par MonCash, en attente de paiement');
+    expect(text).toContain('Compte Meru : email jean@mail.com — Jean Baptiste, tél. +509 3700 1234');
+    expect(text).toContain('Ouvrir : https://recharge.example/admin/commandes/7d5f2a2e-1c4b-4c8e-9a2b-5f6e7d8c9b0a');
+    expect(norm(m.subject)).toBe('Nouvelle commande MR-7F3K2QAB — 20 $ US, en attente de paiement');
+    expect(m.params).toHaveLength(10);
+  });
+
   it('reminder_24h follows the plan wording', () => {
     const m = buildAdminMessage(makeOrder(), 'reminder_24h', adminCtx);
     expect(norm(m.text)).toBe(
@@ -187,6 +198,17 @@ describe('buildCustomerMessage', () => {
       'https://recharge.example/fr/commande/MR-7F3K2QAB',
     ]);
     for (const p of m.params) expect(norm(m.text)).toContain(norm(p));
+  });
+
+  it('created tells the customer to pay and to keep the reference, in both languages', () => {
+    const fr = buildCustomerMessage(makeOrder({ status: 'pending_payment' }), 'created', customerCtx);
+    expect(norm(fr.text)).toContain('Terminez le paiement, gardez cette référence, puis suivez votre commande ici');
+    expect(norm(fr.subject)).toBe('Commande MR-7F3K2QAB créée — 20 $ US');
+    const ht = buildCustomerMessage(makeOrder({ status: 'pending_payment', locale: 'ht' }), 'created', customerCtx);
+    expect(norm(ht.text)).toContain('Fini peman an, kenbe referans sa a, epi swiv kòmand ou isit la');
+    expect(norm(ht.subject)).toBe('Kòmand MR-7F3K2QAB kreye — 20 dola US');
+    // Same keys, same order, one language each.
+    expect(ht.params).toHaveLength(fr.params.length);
   });
 
   it('fulfilled carries [name, usd, meruAccount, meruRef, business, url]', () => {

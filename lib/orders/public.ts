@@ -67,6 +67,12 @@ export type FullOrder = PublicOrder & {
   customerName: string;
   customerPhone: string;
   customerEmail: string | null;
+  /**
+   * The verified address of the account the order was placed from, or `null`
+   * for a guest order. Deliberately absent from `PublicOrder`: a reference
+   * shown to a stranger must never name an account, not even masked.
+   */
+  accountEmail: string | null;
   meruAccount: string;
   meruReference: string | null;
   refundHtg: number | null;
@@ -128,6 +134,7 @@ export function toFullOrder(o: OrderRow, lastUnpaidAt: Date | null, now: Date = 
     customerName: o.customerName,
     customerPhone: o.customerPhone,
     customerEmail: o.customerEmail,
+    accountEmail: o.accountEmail,
     meruAccount: o.meruAccount,
     meruReference: o.meruReference,
     refundHtg: o.refundHtg,

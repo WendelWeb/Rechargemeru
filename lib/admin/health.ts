@@ -19,7 +19,7 @@ import { dbConfigured, envTrim, isProduction, isVercelProduction } from '@/lib/e
 import { adminConfigProblems, adminEmails } from '@/lib/auth/admin';
 import { emailConfigured, emailSender } from '@/lib/notifications/email';
 import { metaConfigured, metaLabel, metaTemplateLanguage } from '@/lib/notifications/whatsapp/meta';
-import { twilioConfigured, twilioLabel, twilioSandbox } from '@/lib/notifications/whatsapp/twilio';
+import { twilioConfigured, twilioLabel, twilioSandbox, twilioSenderValid } from '@/lib/notifications/whatsapp/twilio';
 import { activeWhatsAppProvider, whatsappConfigured } from '@/lib/notifications/whatsapp';
 import { moncashConfigured, moncashLabel, moncashMode, moncashProviderId } from '@/lib/payments/moncash';
 import { natcashConfigured, natcashLabel, natcashMode } from '@/lib/payments/natcash';
@@ -195,17 +195,31 @@ function whatsappStatus(): IntegrationStatus {
     };
   }
   if (provider === 'twilio') {
-    const sandbox = twilioSandbox();
+    if (!twilioSenderValid()) {
+      return {
+        id: 'whatsapp',
+        label: 'WhatsApp',
+        state: 'warn',
+        detail:
+          'TWILIO_WHATSAPP_FROM n’est pas un numéro au format international : aucun message WhatsApp ne partira (journalisés « TWILIO_WHATSAPP_FROM n’est pas un numéro international valide »).',
+        hint: 'Écrivez l’expéditeur en +indicatif puis numéro, par exemple +14155238886 (le préfixe « whatsapp: » est accepté et retiré).',
+      };
+    }
+    if (twilioSandbox()) {
+      return {
+        id: 'whatsapp',
+        label: 'WhatsApp',
+        state: 'warn',
+        detail:
+          'Twilio WhatsApp en BAC À SABLE : vos clients ne reçoivent AUCUN message WhatsApp. Seuls les numéros ayant envoyé « join <deux-mots> » au +1 415 523 8886 sont joignables, et cette autorisation expire toutes les 72 heures.',
+        hint: 'Les messages client sont donc volontairement ignorés, avec la raison en toutes lettres dans /admin/notifications ; ces clients restent prévenus par email et par le bouton « Envoyer sur WhatsApp » de la fiche commande. Pour leur écrire vraiment : demandez un numéro WhatsApp Twilio approuvé (ou passez à Meta Cloud API), puis remplacez TWILIO_WHATSAPP_FROM et mettez TWILIO_SANDBOX=false.',
+      };
+    }
     return {
       id: 'whatsapp',
       label: 'WhatsApp',
-      state: sandbox ? 'warn' : 'ok',
-      detail: sandbox
-        ? `${twilioLabel()} — bac à sable : seuls les numéros ayant fait « join » reçoivent les messages, et les messages CLIENT sont volontairement ignorés.`
-        : twilioLabel(),
-      hint: sandbox
-        ? 'Le bac à sable Twilio ne sert qu’aux alertes admin ; il faut refaire « join » toutes les 72 heures.'
-        : undefined,
+      state: 'ok',
+      detail: `${twilioLabel()} — numéro approuvé : les messages partent à l’opérateur et aux clients.`,
     };
   }
   const templates = envTrim('WHATSAPP_META_TEMPLATES');

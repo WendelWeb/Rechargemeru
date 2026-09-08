@@ -2,6 +2,19 @@
  * lib/notifications/dispatch.ts — one order event in, every configured
  * message out, each one at most once.
  *
+ * THREE PEOPLE ARE WRITTEN TO for an event the matrix designates:
+ *
+ * - the operator — every address of `adminEmails` and every number of
+ *   `adminWhatsappNumbers` (French, linking to the admin order page);
+ * - the customer as they typed themselves — `customerEmail`, the address of
+ *   the order form;
+ * - the customer as their account knows them — `accountEmail`, the verified
+ *   address of the Clerk session that placed the order.
+ *
+ * The last two are deduplicated lowercased (`customerEmails`): the form is
+ * prefilled with the account address, so they are usually the same person and
+ * must not be written to twice. WhatsApp goes to `customerPhone`.
+ *
  * Who gets what comes from the settings matrix (`notifyAdminEvents`,
  * `notifyCustomerEvents`); what they get comes from lib/notifications/templates
  * (which already prefixes sandbox orders with « [TEST — …] »). The database
@@ -75,6 +88,44 @@ function errorText(err: unknown): string {
   return err instanceof Error && err.message ? err.message : String(err);
 }
 
+/**
+ * The machine reasons the channels report, in the French `/admin/notifications`
+ * prints. Anything else — an HTTP error from Resend, Meta or Twilio — is
+ * already a sentence and passes through untouched.
+ */
+const REASON_LABELS: Record<string, string> = {
+  duplicate: 'Déjà envoyée : aucun doublon',
+  not_configured: 'Canal non configuré sur ce serveur',
+  twilio_sandbox_customer:
+    'Bac à sable Twilio : seuls les numéros ayant envoyé « join » reçoivent, les messages client ne partent pas',
+  bad_recipient: 'Destinataire invalide (format international attendu, ex. +50937001234)',
+  bad_sender: 'TWILIO_WHATSAPP_FROM n’est pas un numéro international valide',
+  no_recipient: 'Aucun destinataire',
+  error: 'Erreur non détaillée par le fournisseur',
+};
+
+/** The readable French sentence for a machine reason, or the reason itself. */
+export function reasonLabel(reason: string): string {
+  return REASON_LABELS[reason] ?? reason;
+}
+
+/**
+ * The customer's email addresses, deduplicated in lowercase: the one typed in
+ * the order form, then the verified address of the account that placed the
+ * order. The form prefills the email field with the account address for a
+ * signed-in customer, so the two are normally the same person and must yield
+ * ONE message; they differ when someone orders for a relative, and then both
+ * are written to — the buyer keeps the trace on their own address.
+ */
+export function customerEmails(order: Pick<OrderRow, 'customerEmail' | 'accountEmail'>): string[] {
+  const out: string[] = [];
+  for (const raw of [order.customerEmail, order.accountEmail]) {
+    const email = raw?.trim().toLowerCase();
+    if (email && !out.includes(email)) out.push(email);
+  }
+  return out;
+}
+
 export function defaultNotifyDeps(): NotifyDeps {
   return {
     settings: getSettings,
@@ -120,8 +171,11 @@ function recipientsFor(order: OrderRow, template: NotificationTemplate, settings
   }
   if (settings.notifyCustomerEvents.includes(template)) {
     out.push({ audience: 'customer', channel: 'whatsapp', recipient: order.customerPhone, locale: order.locale });
-    const email = order.customerEmail?.trim().toLowerCase();
-    if (email) out.push({ audience: 'customer', channel: 'email', recipient: email, locale: order.locale });
+    // Two rows for two addresses is not a duplicate: the unique index carries
+    // the recipient, and each address is a different inbox.
+    for (const email of customerEmails(order)) {
+      out.push({ audience: 'customer', channel: 'email', recipient: email, locale: order.locale });
+    }
   }
   return out;
 }
@@ -222,16 +276,16 @@ export async function notifyOrder(
             ? outcome.reason
             : 'not_configured';
         result.skipped += 1;
-        await deps.updateNotification(row.id, { status: 'skipped', error: reason });
+        await deps.updateNotification(row.id, { status: 'skipped', error: reasonLabel(reason) });
         skips.push({ ...key, reason });
       } else {
         const error = outcome.error ?? 'error';
         result.failed += 1;
-        await deps.updateNotification(row.id, { status: 'failed', error });
+        await deps.updateNotification(row.id, { status: 'failed', error: reasonLabel(error) });
         await deps.appendEvent({
           orderId: order.id,
           type: 'notification_failed',
-          message: `Notification « ${template} » en échec (${target.channel}, ${target.audience}) : ${error}`,
+          message: `Notification « ${template} » en échec (${target.channel}, ${target.audience}) : ${reasonLabel(error)}`,
           data: { template, channel: target.channel, audience: target.audience, recipient: target.recipient, error },
         });
       }
@@ -249,7 +303,7 @@ export async function notifyOrder(
       await deps.appendEvent({
         orderId: order.id,
         type: 'notification_skipped',
-        message: `Notification « ${template} » non envoyée : ${Array.from(new Set(reportable.map((s) => s.reason))).join(', ')}`,
+        message: `Notification « ${template} » non envoyée : ${Array.from(new Set(reportable.map((s) => reasonLabel(s.reason)))).join(' ; ')}`,
         data: { template, skipped: reportable },
       });
     } catch (err) {

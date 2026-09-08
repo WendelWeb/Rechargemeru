@@ -31,7 +31,10 @@ import { TrustLine } from './TrustLine';
  * disagrees it answers 409 with a fresh quote, which this component shows
  * before asking for a second, explicit confirmation.
  *
- * Three steps, one card: amount + method + details, confirmation, created.
+ * Three steps, one card: amount + method + details, confirmation, created —
+ * and the third is a passage, not a stop: the redirection to the provider
+ * leaves on its own as soon as the order exists (`submit`), so « Confirmer »
+ * is the last tap the customer owes us.
  *
  * Shaped for a 360px phone first. Three things make it work there:
  * - it is a real `<form>`, so the keyboard's « Suivant » and « OK » keys do
@@ -264,6 +267,10 @@ export function RechargeWidget({
       const response = await fetch('/api/orders', {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
+        // Same-origin is already the default; it is written down because the
+        // `rm_order` cookie this response sets is what brings the customer
+        // back to their order — dropping it would be a silent regression.
+        credentials: 'same-origin',
         body: JSON.stringify({
           usdCents: expected.usdCents,
           method,
@@ -290,13 +297,27 @@ export function RechargeWidget({
       };
 
       if (response.ok && payload.ok === true && payload.reference && payload.redirectUrl) {
+        const { redirectUrl } = payload;
         setCreated({
           reference: payload.reference,
-          redirectUrl: payload.redirectUrl,
+          redirectUrl,
           totalHtg: payload.totalHtg ?? expected.totalHtg,
           expiresAt: payload.expiresAt ?? null,
         });
         setStep('created');
+        // Straight to the provider — « Confirmer » was the decision, and a
+        // second tap on « Payer » only lost people. Nothing is lost by
+        // leaving: the response that just arrived carried the `rm_order`
+        // cookie (the browser stored it before this line runs), the order's
+        // « created » notification has already been dispatched server-side,
+        // and /commande/MR-… stays open to whoever holds the reference.
+        //
+        // The state above is set first so React paints the transition screen
+        // — reference, copy button and a working payment link — whatever the
+        // navigation then does: on a slow network it is what the customer
+        // reads while waiting, and if a blocker swallows the call it is what
+        // they act on.
+        window.location.assign(redirectUrl);
         return;
       }
 

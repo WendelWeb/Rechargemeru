@@ -63,7 +63,11 @@ export const DEFAULT_SETTINGS: Settings = {
   orderTtlMinutes: 30,
   adminEmails: [],
   adminWhatsappNumbers: [],
-  notifyAdminEvents: ['paid', 'needs_review', 'failed'],
+  // `created` is in the admin list on purpose: the operator wants to see an
+  // order enter, still unpaid, not only to hear about it once the money has
+  // arrived. So the two events that matter — creation and payment — leave on
+  // both channels, to the operator and to the customer alike.
+  notifyAdminEvents: ['created', 'paid', 'needs_review', 'failed'],
   notifyCustomerEvents: ['created', 'paid', 'fulfilled', 'failed', 'needs_review', 'refunded'],
   meruAccountTypes: ['email', 'username'],
   businessName: 'Recharge Meru',

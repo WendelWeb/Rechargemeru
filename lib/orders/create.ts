@@ -80,6 +80,16 @@ export type CreateOrderContext = CreateOrderInput & {
    * account only lets the customer find this order again later.
    */
   clerkUserId?: string | null;
+  /**
+   * The **verified** email of that account (`currentUserEmail()`), or `null`.
+   *
+   * Like `clerkUserId` it is read from the session by the route and never
+   * from the request body — a client that put an address here would otherwise
+   * have every order confirmation sent wherever it liked. It is stored beside
+   * the address typed into the form, not instead of it, so a confirmation can
+   * reach both.
+   */
+  accountEmail?: string | null;
 };
 
 /** How many fresh references to try when one collides (32^8 values: a collision is a curiosity). */
@@ -148,6 +158,7 @@ export async function createOrder(input: CreateOrderContext): Promise<CreateOrde
       feeLines: quote.lines,
       totalHtg: quote.totalHtg,
       clerkUserId: input.clerkUserId ?? null,
+      accountEmail: input.accountEmail ?? null,
       customerName: input.customerName.trim(),
       customerPhone,
       customerEmail: input.customerEmail ?? null,

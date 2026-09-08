@@ -6,10 +6,13 @@ import type { SendEmailInput, SendEmailResult } from '@/lib/notifications/email'
 import type { WhatsAppMessage, WhatsAppSendResult } from '@/lib/notifications/whatsapp';
 import { TEST_PREFIX } from '@/lib/notifications/templates';
 import type { OrderEventInput } from '@/lib/orders/events';
-import { notifyOrder, type NotifyDeps } from './dispatch';
+import { customerEmails, notifyOrder, reasonLabel, type NotifyDeps } from './dispatch';
 
 const CREATED = new Date('2026-09-06T12:00:00Z');
 const ORDER_ID = '22222222-2222-4222-8222-222222222222';
+
+/** Money is formatted with narrow no-break spaces; compare on ordinary ones. */
+const norm = (s: string) => s.replace(new RegExp(`[${String.fromCharCode(0x202f, 0x00a0)}]`, 'g'), ' ');
 
 function makeOrder(overrides: Partial<OrderRow> = {}): OrderRow {
   return {
@@ -32,6 +35,7 @@ function makeOrder(overrides: Partial<OrderRow> = {}): OrderRow {
     refundHtg: null,
     refundWallet: null,
     clerkUserId: null,
+    accountEmail: null,
     customerName: 'Jean Baptiste',
     customerPhone: '+50937001234',
     customerEmail: null,
@@ -71,6 +75,11 @@ type FakeOptions = {
 
 const ADMIN_EMAIL = 'ops@example.com';
 const ADMIN_PHONE = '+50931112222';
+const CUSTOMER_PHONE = '+50937001234';
+/** What the customer typed in the order form. */
+const FORM_EMAIL = 'jean.form@mail.com';
+/** The verified address of the Clerk account that placed the order. */
+const ACCOUNT_EMAIL = 'jean.account@mail.com';
 
 function makeFake(opts: FakeOptions = {}): Fake {
   const fake: Fake = { rows: [], emails: [], whatsapps: [], events: [], deps: {} as NotifyDeps };
@@ -227,8 +236,14 @@ describe('notifyOrder', () => {
     expect(r).toEqual({ attempted: 3, sent: 2, skipped: 1, failed: 0 });
     const customerRow = f.rows.find((row) => row.audience === 'customer')!;
     expect(customerRow.status).toBe('skipped');
-    expect(customerRow.error).toBe('twilio_sandbox_customer');
-    expect(eventTypes(f)).toContain('notification_skipped');
+    // The journal carries a sentence, not a slug: the operator must be able to
+    // read why a client got nothing without opening the code.
+    expect(customerRow.error).toBe(
+      'Bac à sable Twilio : seuls les numéros ayant envoyé « join » reçoivent, les messages client ne partent pas',
+    );
+    const skipped = String(f.events.find((e) => e.type === 'notification_skipped')?.message);
+    expect(skipped).toContain('Bac à sable Twilio');
+    expect(skipped).not.toContain('twilio_sandbox_customer');
   });
 
   it('records failures on the row and in the timeline', async () => {
@@ -255,6 +270,51 @@ describe('notifyOrder', () => {
     expect(r).toEqual({ attempted: 0, sent: 0, skipped: 0, failed: 0 });
   });
 
+  it('writes to the three recipients: the operator, the form address and the account address', async () => {
+    const f = makeFake();
+    const order = makeOrder({ customerEmail: FORM_EMAIL, accountEmail: ACCOUNT_EMAIL });
+    const r = await notifyOrder(order, 'paid', {}, f.deps);
+    expect(r).toEqual({ attempted: 5, sent: 5, skipped: 0, failed: 0 });
+    expect(f.emails.map((e) => e.to)).toEqual([ADMIN_EMAIL, FORM_EMAIL, ACCOUNT_EMAIL]);
+    expect(f.whatsapps.map((w) => [w.to, w.audience])).toEqual([
+      [ADMIN_PHONE, 'admin'],
+      [CUSTOMER_PHONE, 'customer'],
+    ]);
+    // Two addresses are two legitimate rows: the unique index carries the recipient.
+    expect(f.rows.map((row) => [row.audience, row.channel, row.recipient, row.status])).toEqual([
+      ['admin', 'email', ADMIN_EMAIL, 'sent'],
+      ['admin', 'whatsapp', ADMIN_PHONE, 'sent'],
+      ['customer', 'whatsapp', CUSTOMER_PHONE, 'sent'],
+      ['customer', 'email', FORM_EMAIL, 'sent'],
+      ['customer', 'email', ACCOUNT_EMAIL, 'sent'],
+    ]);
+  });
+
+  it('writes once when the form address and the account address are the same person', async () => {
+    const f = makeFake();
+    // The form is prefilled with the account address for a signed-in customer,
+    // so this is the ordinary case — case and spacing included.
+    const order = makeOrder({ customerEmail: '  Jean.Form@Mail.com ', accountEmail: 'jean.form@mail.com' });
+    const r = await notifyOrder(order, 'paid', {}, f.deps);
+    expect(r).toEqual({ attempted: 4, sent: 4, skipped: 0, failed: 0 });
+    expect(f.emails.map((e) => e.to)).toEqual([ADMIN_EMAIL, FORM_EMAIL]);
+    expect(f.rows.filter((row) => row.audience === 'customer' && row.channel === 'email')).toHaveLength(1);
+  });
+
+  it('a guest order keeps the form address alone, an account-only order the account address', async () => {
+    const guest = makeFake();
+    await notifyOrder(makeOrder({ customerEmail: FORM_EMAIL, accountEmail: null }), 'paid', {}, guest.deps);
+    expect(guest.emails.map((e) => e.to)).toEqual([ADMIN_EMAIL, FORM_EMAIL]);
+
+    const noForm = makeFake();
+    await notifyOrder(makeOrder({ customerEmail: null, accountEmail: ACCOUNT_EMAIL }), 'paid', {}, noForm.deps);
+    expect(noForm.emails.map((e) => e.to)).toEqual([ADMIN_EMAIL, ACCOUNT_EMAIL]);
+
+    const neither = makeFake();
+    await notifyOrder(makeOrder({ customerEmail: null, accountEmail: null }), 'paid', {}, neither.deps);
+    expect(neither.emails.map((e) => e.to)).toEqual([ADMIN_EMAIL]);
+  });
+
   it('accepts every template without throwing', async () => {
     const templates: NotificationTemplate[] = ['created', 'paid', 'fulfilled', 'failed', 'expired', 'needs_review', 'refunded', 'reminder_24h'];
     const f = makeFake({
@@ -265,5 +325,125 @@ describe('notifyOrder', () => {
       expect(r.attempted).toBe(3);
       expect(r.failed).toBe(0);
     }
+  });
+});
+
+/**
+ * The two moments the operator asked for: an order enters, then it is paid.
+ * Both must leave on BOTH channels, to the operator and to the customer.
+ */
+describe('the two steps, email and WhatsApp', () => {
+  const defaults = { notifyAdminEvents: DEFAULT_SETTINGS.notifyAdminEvents, notifyCustomerEvents: DEFAULT_SETTINGS.notifyCustomerEvents };
+
+  it('warns the operator from the creation, by default', () => {
+    expect(DEFAULT_SETTINGS.notifyAdminEvents).toContain('created');
+    expect(DEFAULT_SETTINGS.notifyAdminEvents).toContain('paid');
+    expect(DEFAULT_SETTINGS.notifyCustomerEvents).toContain('created');
+    expect(DEFAULT_SETTINGS.notifyCustomerEvents).toContain('paid');
+  });
+
+  it('sends both events on both channels to all three recipients', async () => {
+    const f = makeFake({ settings: defaults });
+    const order = makeOrder({ customerEmail: FORM_EMAIL, accountEmail: ACCOUNT_EMAIL });
+    for (const template of ['created', 'paid'] as const) {
+      const r = await notifyOrder(order, template, {}, f.deps);
+      expect(r, template).toEqual({ attempted: 5, sent: 5, skipped: 0, failed: 0 });
+    }
+    const byTemplate = (template: string) => f.rows.filter((row) => row.template === template);
+    for (const template of ['created', 'paid']) {
+      expect(byTemplate(template).map((row) => `${row.audience}/${row.channel}/${row.recipient}`)).toEqual([
+        `admin/email/${ADMIN_EMAIL}`,
+        `admin/whatsapp/${ADMIN_PHONE}`,
+        `customer/whatsapp/${CUSTOMER_PHONE}`,
+        `customer/email/${FORM_EMAIL}`,
+        `customer/email/${ACCOUNT_EMAIL}`,
+      ]);
+    }
+  });
+
+  it('the creation message tells the customer to pay and keep the reference, the operator that an order is waiting', async () => {
+    const f = makeFake({ settings: defaults });
+    await notifyOrder(
+      makeOrder({ status: 'pending_payment', paidHtg: null, customerEmail: FORM_EMAIL }),
+      'created',
+      {},
+      f.deps,
+    );
+    const customer = f.emails.find((e) => e.to === FORM_EMAIL)!;
+    expect(String(customer.text)).toContain('Terminez le paiement, gardez cette référence');
+    expect(customer.subject).toContain('MR-ABCDEFGH');
+    const operator = f.emails.find((e) => e.to === ADMIN_EMAIL)!;
+    expect(operator.subject).toContain('en attente de paiement');
+    expect(String(operator.text)).toContain('🆕 Nouvelle commande MR-ABCDEFGH');
+    expect(String(operator.text)).toContain('en attente de paiement');
+    const operatorWa = f.whatsapps.find((w) => w.audience === 'admin')!;
+    expect(operatorWa.text).toContain('en attente de paiement');
+  });
+
+  it('the payment message announces the dollars to the customer and the transfer to do to the operator', async () => {
+    const f = makeFake({ settings: defaults });
+    await notifyOrder(makeOrder({ customerEmail: FORM_EMAIL }), 'paid', {}, f.deps);
+    const customer = f.emails.find((e) => e.to === FORM_EMAIL)!;
+    expect(norm(String(customer.text))).toContain('nous avons reçu votre paiement de 2 783 HTG par MonCash');
+    expect(norm(String(customer.text))).toContain('envoie vos 20 $ US sur votre compte Meru');
+
+    // The operator alert carries everything needed to send the dollars.
+    const operator = f.emails.find((e) => e.to === ADMIN_EMAIL)!;
+    expect(norm(operator.subject)).toBe('Payée MR-ABCDEFGH — envoyer 20 $ US sur Meru');
+    const text = norm(String(operator.text));
+    expect(text).toContain('envoyer 20 $ US sur Meru');
+    expect(text).toContain('jean@mail.com');
+    expect(text).toContain('Jean Baptiste');
+    expect(text).toContain('+509 3700 1234');
+    expect(text).toContain(`https://recharge.example/admin/commandes/${ORDER_ID}`);
+    expect(norm(f.whatsapps.find((w) => w.audience === 'admin')!.text)).toContain('envoyer 20 $ US sur Meru');
+  });
+
+  it('renders the customer in the order’s language and the operator always in French', async () => {
+    const fr = makeFake({ settings: defaults });
+    await notifyOrder(makeOrder({ locale: 'fr', customerEmail: FORM_EMAIL }), 'created', {}, fr.deps);
+    expect(fr.emails.find((e) => e.to === FORM_EMAIL)!.subject).toContain('Commande MR-ABCDEFGH créée');
+    expect(fr.whatsapps.find((w) => w.audience === 'customer')!.locale).toBe('fr');
+
+    const ht = makeFake({ settings: defaults });
+    await notifyOrder(makeOrder({ locale: 'ht', customerEmail: FORM_EMAIL }), 'created', {}, ht.deps);
+    const htMail = ht.emails.find((e) => e.to === FORM_EMAIL)!;
+    expect(htMail.subject).toContain('Kòmand MR-ABCDEFGH kreye');
+    expect(String(htMail.text)).toContain('Fini peman an, kenbe referans sa a');
+    const htWa = ht.whatsapps.find((w) => w.audience === 'customer')!;
+    expect(htWa.locale).toBe('ht');
+    expect(htWa.text).toContain('Bonjou Jean');
+    // The operator reads French whatever the customer chose.
+    expect(ht.emails.find((e) => e.to === ADMIN_EMAIL)!.subject).toContain('Nouvelle commande');
+    expect(ht.rows.filter((row) => row.audience === 'admin').every((row) => row.locale === 'fr')).toBe(true);
+  });
+
+  it('keeps the TEST prefix on both steps for a sandbox order', async () => {
+    const f = makeFake({ settings: defaults });
+    const order = makeOrder({ mode: 'sandbox', customerEmail: FORM_EMAIL, accountEmail: ACCOUNT_EMAIL });
+    for (const template of ['created', 'paid'] as const) await notifyOrder(order, template, {}, f.deps);
+    for (const email of f.emails) expect(email.subject.startsWith('[T')).toBe(true);
+    for (const wa of f.whatsapps) {
+      expect(wa.text.startsWith('[T')).toBe(true);
+      expect(wa.params[0].startsWith('[T')).toBe(true);
+    }
+  });
+});
+
+describe('customerEmails', () => {
+  it('keeps both addresses, lowercased, and collapses the duplicate', () => {
+    expect(customerEmails({ customerEmail: FORM_EMAIL, accountEmail: ACCOUNT_EMAIL })).toEqual([FORM_EMAIL, ACCOUNT_EMAIL]);
+    expect(customerEmails({ customerEmail: ' Jean.Form@Mail.com ', accountEmail: 'JEAN.FORM@mail.com' })).toEqual([FORM_EMAIL]);
+    expect(customerEmails({ customerEmail: null, accountEmail: null })).toEqual([]);
+    expect(customerEmails({ customerEmail: '  ', accountEmail: ACCOUNT_EMAIL })).toEqual([ACCOUNT_EMAIL]);
+  });
+});
+
+describe('reasonLabel', () => {
+  it('turns a machine reason into a French sentence and leaves the rest alone', () => {
+    expect(reasonLabel('twilio_sandbox_customer')).toContain('Bac à sable Twilio');
+    expect(reasonLabel('not_configured')).toBe('Canal non configuré sur ce serveur');
+    expect(reasonLabel('bad_sender')).toContain('TWILIO_WHATSAPP_FROM');
+    expect(reasonLabel('HTTP 500 — boom')).toBe('HTTP 500 — boom');
   });
 });

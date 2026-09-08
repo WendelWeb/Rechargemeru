@@ -15,6 +15,20 @@
       "when": 1788797289761,
       "tag": "0001_clerk_and_fees",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1788835216683,
+      "tag": "0002_account_email",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1788837480471,
+      "tag": "0003_notify_admin_created",
+      "breakpoints": true
     }
   ]
 }
