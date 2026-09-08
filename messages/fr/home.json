@@ -6,6 +6,8 @@
   "hero": {
     "title": "Payez en gourdes, recevez des dollars sur Meru.",
     "lead": "Choisissez un montant, payez avec MonCash ou NatCash, et nous envoyons les dollars sur votre compte Meru. Le total en gourdes s'affiche avant de payer, sans surprise.",
+    "price": "{usd} = {total}, tout compris",
+    "rateNote": "Taux de change : {rate}",
     "rate": "Taux du jour : {rate}"
   },
   "resume": {
@@ -16,10 +18,10 @@
   "widget": {
     "title": "Votre recharge",
     "amount": {
-      "title": "Combien voulez-vous recharger ?",
+      "title": "Combien voulez-vous recharger, en dollars US ?",
       "label": "Montant en dollars US",
-      "hint": "Entre {min} et {max}. Vous pouvez écrire 20 ou 20,50.",
-      "quick": "Montants rapides"
+      "hint": "Entre {min} et {max}.",
+      "quickHint": "Montants rapides, en dollars US"
     },
     "method": {
       "title": "Comment voulez-vous payer ?",
@@ -30,26 +32,29 @@
       "title": "Où envoyer les dollars ?",
       "name": "Nom complet, tel qu'affiché sur Meru",
       "namePlaceholder": "Jean Baptiste",
-      "nameHint": "Nous comparons ce nom avec votre compte Meru avant d'envoyer.",
-      "meruType": "Type d'identifiant Meru",
       "meruTypes": {
         "email": "Email Meru",
         "username": "Nom d'utilisateur Meru"
       },
       "meruLabel": {
         "email": "Email de votre compte Meru",
-        "username": "Nom d'utilisateur de votre compte Meru"
+        "username": "Nom d'utilisateur de votre compte Meru",
+        "either": "Email ou nom d’utilisateur Meru"
       },
       "meruPlaceholder": {
         "email": "jean@mail.com",
-        "username": "jeanbaptiste"
+        "username": "jeanbaptiste",
+        "either": "jean@mail.com"
       },
+      "meruHint": "Tel qu’il apparaît dans votre profil Meru.",
+      "meruHelpToggle": "Où le trouver ?",
       "phone": "Numéro WhatsApp",
-      "phoneHint": "Numéro haïtien à 8 chiffres, ou numéro +1. Nous vous écrivons dessus pour toute question.",
+      "phoneHint": "Numéro haïtien à 8 chiffres, ou un numéro +1.",
       "phonePlaceholder": "3700 1234",
       "email": "Email",
       "optional": "facultatif",
       "emailHint": "Pour recevoir aussi la confirmation par email.",
+      "emailToggle": "Recevoir aussi la confirmation par email",
       "emailPlaceholder": "vous@mail.com"
     },
     "continue": "Vérifier et continuer",
@@ -63,7 +68,8 @@
       "name": "Entrez votre nom complet, au moins 2 caractères.",
       "meru": {
         "email": "Entrez un email valide, par exemple jean@mail.com.",
-        "username": "Entrez un nom d'utilisateur Meru valide : 3 à 40 caractères (lettres, chiffres, point, tiret, tiret bas)."
+        "username": "Entrez un nom d'utilisateur Meru valide : 3 à 40 caractères (lettres, chiffres, point, tiret, tiret bas).",
+        "either": "Entrez l’email ou le nom d’utilisateur de votre compte Meru."
       },
       "phone": "Entrez un numéro WhatsApp valide : 8 chiffres pour Haïti, ou +1 suivi de 10 chiffres.",
       "email": "Entrez un email valide ou laissez le champ vide."
@@ -72,23 +78,24 @@
   "receipt": {
     "title": "Votre reçu",
     "youReceive": "Vous recevez sur Meru",
-    "rate": "Taux",
-    "base": "Contre-valeur en gourdes",
+    "rate": "Taux de change",
+    "base": "Montant converti",
     "total": "Total à payer",
-    "effective": "soit {rate} tout compris",
+    "effective": "Taux tout compris : {rate}",
     "percentDetail": "{value} %",
     "placeholder": "Choisissez un montant pour voir le total en gourdes.",
     "frozen": "Ce reçu est figé : c'est exactement ce que vous payez."
   },
   "confirm": {
     "title": "Vérifiez avant de payer",
-    "warning": "Les dollars seront envoyés à <strong>{account}</strong>, au nom de {name}. Un envoi vers un mauvais compte ne peut pas être annulé.",
+    "warningTitle": "Vérifiez le compte qui reçoit",
+    "warningBody": "Les dollars partent sur ce compte, au nom de {name}. Un envoi vers un mauvais compte ne peut pas être annulé.",
     "amount": "Montant",
     "method": "Paiement",
     "whatsapp": "WhatsApp",
     "email": "Email",
     "edit": "Corriger",
-    "submit": "Confirmer et créer la commande",
+    "submit": "Confirmer la commande",
     "submitting": "Création de la commande…",
     "changed": {
       "title": "Le taux a changé",
@@ -103,7 +110,8 @@
     "track": "Suivre cette commande",
     "support": "Écrire au support WhatsApp",
     "supportMessage": "Bonjour, commande {reference}",
-    "pay": "Payer {total} avec {method}",
+    "pay": "Payer {total}",
+    "payWith": "avec {method}",
     "redirecting": "Ouverture de {method}…",
     "expires": "Ce lien de paiement est valable jusqu'à {time}. Passé ce délai, il faudra créer une nouvelle commande.",
     "sandbox": "Commande de test : le paiement sera simulé et aucun dollar ne sera envoyé."

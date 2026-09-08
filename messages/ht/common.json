@@ -5,9 +5,13 @@
   "nav": {
     "home": "Akèy",
     "track": "Swiv kòmand mwen",
+    "trackShort": "Swiv",
     "faq": "Kesyon yo poze souvan",
+    "faqShort": "FAQ",
     "terms": "Kondisyon yo",
-    "support": "Sipò WhatsApp"
+    "support": "Sipò WhatsApp",
+    "primary": "Navigasyon prensipal",
+    "footer": "Lyen anba paj la"
   },
   "account": {
     "signIn": "Konekte",
@@ -24,7 +28,8 @@
     "feesVisible": "Frè yo parèt anvan ou peye, san okenn sipriz.",
     "verified": "Chak peman verifye dirèkteman ak MonCash oswa NatCash.",
     "tracking": "Swiv kòmand ou nenpòt lè ak referans li.",
-    "support": "Se yon vrè moun k ap reponn ou sou WhatsApp."
+    "support": "Se yon vrè moun k ap reponn ou sou WhatsApp.",
+    "short": "Frè yo parèt anvan ou peye · Peman verifye · Swiv ak referans"
   },
   "sandbox": {
     "title": "Mòd tès",
@@ -42,7 +47,8 @@
     "failed": "Echwe",
     "expired": "Ekspire",
     "cancelled": "Anile",
-    "refunded": "Ranbouse"
+    "refunded": "Ranbouse",
+    "checking": "N ap verifye"
   },
   "notFound": {
     "title": "Paj sa a pa egziste",
@@ -56,6 +62,6 @@
   },
   "copy": "Kopye",
   "copied": "Li kopye",
-  "currencyNote": "Montan yo parèt an dola ameriken (dola US) ak an goud (HTG).",
+  "currencyNote": "Montan yo parèt an dola ameriken (dola US) ak an goud (HTG).",
   "test": "TÈS"
 }

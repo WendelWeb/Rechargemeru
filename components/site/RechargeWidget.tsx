@@ -16,10 +16,10 @@ import { Card } from '@/components/ui/Card';
 import { Field, fieldDescribedBy } from '@/components/ui/Field';
 import { Input } from '@/components/ui/Input';
 import { MethodBadge } from '@/components/ui/MethodBadge';
-import { Select } from '@/components/ui/Select';
 import { ConfirmStep } from './ConfirmStep';
 import { CreatedStep } from './CreatedStep';
 import { QuoteReceipt } from './QuoteReceipt';
+import { TrustLine } from './TrustLine';
 
 /**
  * The calculator that is also the order form.
@@ -32,6 +32,16 @@ import { QuoteReceipt } from './QuoteReceipt';
  * before asking for a second, explicit confirmation.
  *
  * Three steps, one card: amount + method + details, confirmation, created.
+ *
+ * Shaped for a 360px phone first. Three things make it work there:
+ * - it is a real `<form>`, so the keyboard's « Suivant » and « OK » keys do
+ *   what they promise and the browser can autofill a group of fields;
+ * - the total and the button that commits to it never separate: a sticky bar
+ *   at the foot of the card carries both, so at no point in a 1 500px form is
+ *   the customer asked to continue without seeing what they are about to pay;
+ * - every control it can drop, it drops. The « type d'identifiant » select is
+ *   inferred from the « @ », the long Meru help sits behind a disclosure, and
+ *   the optional email is folded away. Six controls became four.
  */
 
 /** A rail the visitor may actually pay through (already filtered by the page). */
@@ -58,6 +68,7 @@ export type RechargeWidgetProps = {
   /** `false` when Clerk is not configured: the widget then says nothing about accounts. */
   accountsEnabled?: boolean;
   account?: WidgetAccount | null;
+  className?: string;
 };
 
 type FieldKey = 'amount' | 'customerName' | 'meruAccount' | 'phone' | 'email';
@@ -88,6 +99,9 @@ const ERROR_KEYS: readonly string[] = [
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
+/** No-break space, as in lib/format: « 20 $ US » never splits across lines. */
+const NBSP = '\u00a0';
+
 /** « 20 », « 20,50 », « 20.5 » → cents; anything else → null. */
 export function parseUsdCents(raw: string): number | null {
   const cleaned = raw.replace(/\s/g, '').replace(',', '.');
@@ -95,6 +109,21 @@ export function parseUsdCents(raw: string): number | null {
   const [whole, frac = ''] = cleaned.split('.');
   const cents = Number(whole) * 100 + Number(`${frac}00`.slice(0, 2));
   return Number.isSafeInteger(cents) && cents > 0 ? cents : null;
+}
+
+/**
+ * Which kind of Meru identifier the customer just typed.
+ *
+ * An « @ » says « email » and nothing else does — a whole select, ninety
+ * pixels and one decision were being spent on a question the value answers
+ * by itself. When the operator allows only one kind, that is the answer.
+ */
+export function inferMeruAccountType(value: string, allowed: MeruAccountType[]): MeruAccountType {
+  if (allowed.length === 1) return allowed[0];
+  const wantsEmail = value.includes('@');
+  if (wantsEmail && allowed.includes('email')) return 'email';
+  if (!wantsEmail && allowed.includes('username')) return 'username';
+  return allowed[0] ?? 'email';
 }
 
 export function RechargeWidget({
@@ -108,6 +137,7 @@ export function RechargeWidget({
   copiedLabel,
   accountsEnabled = false,
   account = null,
+  className,
 }: RechargeWidgetProps) {
   const t = useTranslations('home');
 
@@ -127,10 +157,10 @@ export function RechargeWidget({
   // Prefilled from the Clerk profile when there is one, and editable like any
   // other field: the name on Meru is not always the name on the account.
   const [customerName, setCustomerName] = useState(account?.name ?? '');
-  const [accountType, setAccountType] = useState<MeruAccountType>(meruAccountTypes[0] ?? 'email');
   const [meruAccount, setMeruAccount] = useState('');
   const [phone, setPhone] = useState('');
   const [email, setEmail] = useState(account?.email ?? '');
+  const [emailOpen, setEmailOpen] = useState(Boolean(account?.email));
 
   const [step, setStep] = useState<'form' | 'confirm' | 'created'>('form');
   const [errors, setErrors] = useState<FieldErrors>({});
@@ -139,6 +169,9 @@ export function RechargeWidget({
   /** The quote the server returned with a 409: what the customer must confirm now. */
   const [serverQuote, setServerQuote] = useState<Quote | null>(null);
   const [created, setCreated] = useState<CreatedOrder | null>(null);
+
+  const accountType = inferMeruAccountType(meruAccount, meruAccountTypes);
+  const singleAccountType = meruAccountTypes.length === 1;
 
   const usdCents = parseUsdCents(amount);
   const quoteResult = useMemo(
@@ -157,7 +190,7 @@ export function RechargeWidget({
 
   const minLabel = formatUsdShort(quoteSettings.minUsdCents, locale);
   const maxLabel = formatUsdShort(quoteSettings.maxUsdCents, locale);
-  const unit = locale === 'ht' ? 'dola US' : '$ US';
+  const unit = locale === 'ht' ? `dola${NBSP}US` : `$${NBSP}US`;
 
   /** One place for every error sentence that needs the amounts or the rail's name. */
   function message(key: string): string {
@@ -180,7 +213,9 @@ export function RechargeWidget({
     if (!quoteResult.ok) next.amount = amountError();
     const name = customerName.trim();
     if (name.length < 2 || name.length > 80) next.customerName = t('widget.fields.name');
-    if (!normalizeMeruAccount(accountType, meruAccount)) next.meruAccount = t(`widget.fields.meru.${accountType}`);
+    if (!normalizeMeruAccount(accountType, meruAccount)) {
+      next.meruAccount = singleAccountType ? t(`widget.fields.meru.${accountType}`) : t('widget.fields.meru.either');
+    }
     if (!normalizePhone(phone)) next.phone = t('widget.fields.phone');
     if (email.trim() !== '' && !EMAIL_RE.test(email.trim())) next.email = t('widget.fields.email');
     return next;
@@ -189,9 +224,18 @@ export function RechargeWidget({
   function onContinue() {
     const next = validate();
     setErrors(next);
+    // The optional email lives inside a closed disclosure; opening it before
+    // the focus lands is the difference between « corrigez ce champ » and a
+    // form that refuses without showing why.
+    if (next.email) setEmailOpen(true);
     const firstInvalid = Object.keys(next)[0];
     if (firstInvalid) {
-      document.getElementById(firstInvalid)?.focus();
+      requestAnimationFrame(() => {
+        const control = document.getElementById(firstInvalid);
+        control?.focus();
+        const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+        control?.scrollIntoView({ block: 'center', behavior: reduced ? 'auto' : 'smooth' });
+      });
       return;
     }
     setServerErrorKey(null);
@@ -272,7 +316,7 @@ export function RechargeWidget({
 
   if (methods.length === 0) {
     return (
-      <Card>
+      <Card className={className}>
         <Alert tone="danger" title={t('widget.title')}>
           {t('widget.method.none')}
         </Alert>
@@ -282,7 +326,7 @@ export function RechargeWidget({
 
   if (step === 'created' && created) {
     return (
-      <Card>
+      <Card className={className}>
         <CreatedStep
           reference={created.reference}
           redirectUrl={created.redirectUrl}
@@ -307,7 +351,7 @@ export function RechargeWidget({
       ) : null;
 
     return (
-      <Card>
+      <Card className={className}>
         <ConfirmStep
           locale={locale}
           quote={confirmedQuote}
@@ -336,13 +380,13 @@ export function RechargeWidget({
   let accountNote: ReactNode = null;
   if (accountsEnabled && account !== null) {
     accountNote = accountLabel ? (
-      <p className="text-sm leading-relaxed text-ink-soft">
+      <p className="px-card pb-card text-sm leading-relaxed break-anywhere text-ink-soft">
         {t('widget.account.signedIn', { account: accountLabel })}
       </p>
     ) : null;
   } else if (accountsEnabled) {
     accountNote = (
-      <p className="text-sm leading-relaxed text-ink-soft">
+      <p className="px-card pb-card text-sm leading-relaxed text-ink-soft">
         {t('widget.account.guest')}{' '}
         <Link href="/inscription" className="rounded font-medium text-ink underline underline-offset-2">
           {t('widget.account.guestCta')}
@@ -351,14 +395,32 @@ export function RechargeWidget({
     );
   }
 
+  const meruLabel = singleAccountType
+    ? t(`widget.details.meruLabel.${accountType}`)
+    : t('widget.details.meruLabel.either');
+  const meruPlaceholder = singleAccountType
+    ? t(`widget.details.meruPlaceholder.${accountType}`)
+    : t('widget.details.meruPlaceholder.either');
+
   return (
-    <Card padding="none">
-      <div className="space-y-7 p-5 sm:p-6">
+    <Card padding="none" className={className}>
+      <form
+        noValidate
+        onSubmit={(event) => {
+          event.preventDefault();
+          onContinue();
+        }}
+        className="space-y-stack p-card"
+      >
         <section>
           <h2 className="font-display text-base font-semibold text-ink">{t('widget.amount.title')}</h2>
 
           {quickAmounts.length > 0 ? (
-            <div className="mt-3 flex flex-wrap gap-2" role="group" aria-label={t('widget.amount.quick')}>
+            <div
+              className="mt-3 flex flex-wrap gap-2"
+              role="group"
+              aria-label={t('widget.amount.quickHint')}
+            >
               {quickAmounts.map((usd) => {
                 const selected = usdCents === usd * 100;
                 return (
@@ -366,18 +428,23 @@ export function RechargeWidget({
                     key={usd}
                     type="button"
                     aria-pressed={selected}
+                    // The unit is said once, by the heading and by the field's
+                    // own suffix. Repeating « $ US » on five chips cost three
+                    // rows of scrolling and told nobody anything new; the
+                    // accessible name still carries it in full.
+                    aria-label={formatUsdShort(usd * 100, locale)}
                     onClick={() => {
                       setAmount(String(usd));
                       setErrors((prev) => ({ ...prev, amount: undefined }));
                     }}
                     className={cn(
-                      'min-h-10 rounded-xl border px-3.5 font-display tnum text-[15px] font-semibold transition-colors',
+                      'inline-flex min-h-tap min-w-12 items-center justify-center rounded-xl border px-3.5 font-display tnum text-base font-semibold transition-colors',
                       selected
                         ? 'border-ink bg-ink text-paper'
-                        : 'border-line bg-paper text-ink hover:border-ink-muted hover:bg-mist',
+                        : 'border-line-strong bg-paper text-ink hover:border-ink hover:bg-mist',
                     )}
                   >
-                    {formatUsdShort(usd * 100, locale)}
+                    {usd}
                   </button>
                 );
               })}
@@ -387,9 +454,10 @@ export function RechargeWidget({
           <Field
             htmlFor="amount"
             label={t('widget.amount.label')}
+            labelHidden
             hint={t('widget.amount.hint', { min: minLabel, max: maxLabel })}
             error={errors.amount}
-            className="mt-4"
+            className="mt-3"
           >
             <div className="relative">
               <Input
@@ -408,7 +476,7 @@ export function RechargeWidget({
                   setErrors((prev) => ({ ...prev, amount: undefined }));
                 }}
               />
-              <span className="pointer-events-none absolute inset-y-0 right-3.5 flex items-center text-sm text-ink-soft">
+              <span className="pointer-events-none absolute inset-y-0 right-3.5 flex items-center text-sm whitespace-nowrap text-ink-soft">
                 {unit}
               </span>
             </div>
@@ -426,7 +494,7 @@ export function RechargeWidget({
                     key={item.method}
                     className={cn(
                       'flex min-h-13 cursor-pointer items-center gap-3 rounded-xl border px-4 py-3 transition-colors',
-                      selected ? 'border-ink bg-mist' : 'border-line bg-paper hover:border-ink-muted',
+                      selected ? 'border-ink bg-mist' : 'border-line-strong bg-paper hover:border-ink',
                     )}
                   >
                     <input
@@ -448,25 +516,27 @@ export function RechargeWidget({
           ) : null}
         </section>
 
-        <QuoteReceipt quote={localQuote} locale={locale} method={method} emptyMessage={amountError() || undefined} />
+        <div className="space-y-3">
+          <QuoteReceipt quote={localQuote} locale={locale} method={method} emptyMessage={amountError() || undefined} />
+          {/* The one trust sentence that belongs exactly here, where the fees
+              are. The other two sit under the card; on a desk all three are in
+              the left column and this copy would be a duplicate. */}
+          <TrustLine kind="feesVisible" className="lg:hidden" />
+        </div>
 
         <section className="space-y-4">
           <h2 className="font-display text-base font-semibold text-ink">{t('widget.details.title')}</h2>
 
-          <Field
-            htmlFor="customerName"
-            label={t('widget.details.name')}
-            hint={t('widget.details.nameHint')}
-            error={errors.customerName}
-          >
+          <Field htmlFor="customerName" label={t('widget.details.name')} error={errors.customerName}>
             <Input
               id="customerName"
               name="customerName"
               autoComplete="name"
+              enterKeyHint="next"
               placeholder={t('widget.details.namePlaceholder')}
               value={customerName}
               invalid={Boolean(errors.customerName)}
-              aria-describedby={fieldDescribedBy('customerName', { hint: true, error: errors.customerName })}
+              aria-describedby={fieldDescribedBy('customerName', { hint: false, error: errors.customerName })}
               onChange={(event) => {
                 setCustomerName(event.target.value);
                 setErrors((prev) => ({ ...prev, customerName: undefined }));
@@ -474,31 +544,21 @@ export function RechargeWidget({
             />
           </Field>
 
-          {meruAccountTypes.length > 1 ? (
-            <Field htmlFor="meruAccountType" label={t('widget.details.meruType')}>
-              <Select
-                id="meruAccountType"
-                name="meruAccountType"
-                value={accountType}
-                onChange={(event) => {
-                  setAccountType(event.target.value as MeruAccountType);
-                  setErrors((prev) => ({ ...prev, meruAccount: undefined }));
-                }}
-              >
-                {meruAccountTypes.map((type) => (
-                  <option key={type} value={type}>
-                    {t(`widget.details.meruTypes.${type}`)}
-                  </option>
-                ))}
-              </Select>
-            </Field>
-          ) : null}
-
           <Field
             htmlFor="meruAccount"
-            label={t(`widget.details.meruLabel.${accountType}`)}
-            hint={meruHelp}
+            label={meruLabel}
+            hint={t('widget.details.meruHint')}
             error={errors.meruAccount}
+            footer={
+              // The operator's help runs to some 175 characters — five lines
+              // in the middle of the form. It stays one tap away instead.
+              <details className="group">
+                <summary className="inline-flex min-h-tap cursor-pointer list-none items-center rounded-lg text-sm font-medium text-ink underline underline-offset-2 [&::-webkit-details-marker]:hidden">
+                  {t('widget.details.meruHelpToggle')}
+                </summary>
+                <p className="pb-1 text-sm leading-relaxed break-anywhere text-ink-soft">{meruHelp}</p>
+              </details>
+            }
           >
             <Input
               id="meruAccount"
@@ -507,8 +567,11 @@ export function RechargeWidget({
               autoCapitalize="none"
               autoCorrect="off"
               spellCheck={false}
-              inputMode={accountType === 'email' ? 'email' : 'text'}
-              placeholder={t(`widget.details.meruPlaceholder.${accountType}`)}
+              enterKeyHint="next"
+              // The keyboard must not swap under the thumb as soon as an « @ »
+              // is typed: it is chosen from what the operator allows, once.
+              inputMode={meruAccountTypes.includes('email') ? 'email' : 'text'}
+              placeholder={meruPlaceholder}
               value={meruAccount}
               invalid={Boolean(errors.meruAccount)}
               aria-describedby={fieldDescribedBy('meruAccount', { hint: true, error: errors.meruAccount })}
@@ -532,6 +595,7 @@ export function RechargeWidget({
               mono
               inputMode="tel"
               autoComplete="tel"
+              enterKeyHint="send"
               placeholder={t('widget.details.phonePlaceholder')}
               value={phone}
               invalid={Boolean(errors.phone)}
@@ -543,30 +607,40 @@ export function RechargeWidget({
             />
           </Field>
 
-          <Field
-            htmlFor="email"
-            label={t('widget.details.email')}
-            optional={t('widget.details.optional')}
-            hint={t('widget.details.emailHint')}
-            error={errors.email}
+          <details
+            open={emailOpen || Boolean(errors.email)}
+            onToggle={(event) => setEmailOpen(event.currentTarget.open)}
           >
-            <Input
-              id="email"
-              name="email"
-              type="email"
-              autoComplete="email"
-              autoCapitalize="none"
-              spellCheck={false}
-              placeholder={t('widget.details.emailPlaceholder')}
-              value={email}
-              invalid={Boolean(errors.email)}
-              aria-describedby={fieldDescribedBy('email', { hint: true, error: errors.email })}
-              onChange={(event) => {
-                setEmail(event.target.value);
-                setErrors((prev) => ({ ...prev, email: undefined }));
-              }}
-            />
-          </Field>
+            <summary className="inline-flex min-h-tap cursor-pointer list-none items-center rounded-lg text-sm font-medium text-ink underline underline-offset-2 [&::-webkit-details-marker]:hidden">
+              {t('widget.details.emailToggle')}
+            </summary>
+            <Field
+              htmlFor="email"
+              label={t('widget.details.email')}
+              optional={t('widget.details.optional')}
+              hint={t('widget.details.emailHint')}
+              error={errors.email}
+              className="pt-2"
+            >
+              <Input
+                id="email"
+                name="email"
+                type="email"
+                autoComplete="email"
+                autoCapitalize="none"
+                spellCheck={false}
+                enterKeyHint="done"
+                placeholder={t('widget.details.emailPlaceholder')}
+                value={email}
+                invalid={Boolean(errors.email)}
+                aria-describedby={fieldDescribedBy('email', { hint: true, error: errors.email })}
+                onChange={(event) => {
+                  setEmail(event.target.value);
+                  setErrors((prev) => ({ ...prev, email: undefined }));
+                }}
+              />
+            </Field>
+          </details>
         </section>
 
         {serverErrorKey ? (
@@ -575,12 +649,29 @@ export function RechargeWidget({
           </Alert>
         ) : null}
 
-        <Button variant="dark" size="lg" className="w-full" onClick={onContinue}>
-          {t('widget.continue')}
-        </Button>
+        {/*
+          The total and the button that commits to it, together, always. On a
+          phone this bar is pinned to the bottom of the screen for the whole
+          length of the form — the receipt is 900px above by the time the last
+          field is filled, and « continuer » with nothing to continue towards
+          is exactly how a payment page loses somebody. On `lg` the receipt is
+          permanently in view beside the form, so the bar goes back to being
+          an ordinary button.
+        */}
+        <div className="sticky bottom-0 z-20 -mx-card border-t border-line-strong bg-paper/95 px-card pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] backdrop-blur-sm lg:static lg:mx-0 lg:border-0 lg:bg-transparent lg:p-0 lg:backdrop-blur-none">
+          {localQuote ? (
+            <p className="flex items-baseline justify-between gap-3 pb-2 lg:hidden">
+              <span className="text-caption font-medium text-ink-soft">{t('receipt.total')}</span>
+              <span className="font-display tnum text-xl font-bold text-ink">{formatHtg(localQuote.totalHtg)}</span>
+            </p>
+          ) : null}
+          <Button type="submit" variant="dark" size="lg" className="w-full">
+            {t('widget.continue')}
+          </Button>
+        </div>
+      </form>
 
-        {accountNote}
-      </div>
+      {accountNote}
     </Card>
   );
 }

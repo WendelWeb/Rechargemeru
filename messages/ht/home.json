@@ -6,6 +6,8 @@
   "hero": {
     "title": "Peye an goud, resevwa dola sou Meru.",
     "lead": "Chwazi yon montan, peye ak MonCash oswa NatCash, epi nou voye dola yo sou kont Meru ou. Total la an goud parèt anvan ou peye, san sipriz.",
+    "price": "{usd} = {total}, ak tout frè",
+    "rateNote": "To echanj : {rate}",
     "rate": "To jodi a : {rate}"
   },
   "resume": {
@@ -16,10 +18,10 @@
   "widget": {
     "title": "Rechaj ou",
     "amount": {
-      "title": "Konbyen ou vle rechaje ?",
+      "title": "Konbyen dola US ou vle rechaje ?",
       "label": "Montan an dola US",
-      "hint": "Ant {min} ak {max}. Ou ka ekri 20 oswa 20,50.",
-      "quick": "Montan rapid"
+      "hint": "Ant {min} ak {max}.",
+      "quickHint": "Montan rapid, an dola US"
     },
     "method": {
       "title": "Kijan ou vle peye ?",
@@ -30,26 +32,29 @@
       "title": "Ki kote pou nou voye dola yo ?",
       "name": "Non konplè, jan li parèt sou Meru",
       "namePlaceholder": "Jean Baptiste",
-      "nameHint": "Nou konpare non sa a ak kont Meru ou anvan nou voye lajan an.",
-      "meruType": "Kalite idantifyan Meru",
       "meruTypes": {
         "email": "Imel Meru",
         "username": "Non itilizatè Meru"
       },
       "meruLabel": {
         "email": "Imel kont Meru ou",
-        "username": "Non itilizatè kont Meru ou"
+        "username": "Non itilizatè kont Meru ou",
+        "either": "Imel oswa non itilizatè Meru"
       },
       "meruPlaceholder": {
         "email": "jan@mail.com",
-        "username": "janbatis"
+        "username": "janbatis",
+        "either": "jan@mail.com"
       },
+      "meruHint": "Jan li parèt nan pwofil Meru ou.",
+      "meruHelpToggle": "Ki kote pou jwenn li ?",
       "phone": "Nimewo WhatsApp",
-      "phoneHint": "Nimewo ayisyen ak 8 chif, oswa yon nimewo +1. Se sou li nou ekri ou si gen yon kesyon.",
+      "phoneHint": "Nimewo ayisyen ak 8 chif, oswa yon nimewo +1.",
       "phonePlaceholder": "3700 1234",
       "email": "Imel",
       "optional": "si ou vle",
       "emailHint": "Pou resevwa konfimasyon an pa imel tou.",
+      "emailToggle": "Resevwa konfimasyon an pa imel tou",
       "emailPlaceholder": "ou@mail.com"
     },
     "continue": "Verifye epi kontinye",
@@ -63,7 +68,8 @@
       "name": "Mete non konplè ou, omwen 2 karaktè.",
       "meru": {
         "email": "Mete yon imel ki valab, pa egzanp jan@mail.com.",
-        "username": "Mete yon non itilizatè Meru ki valab : 3 a 40 karaktè (lèt, chif, pwen, tirè, tirè anba)."
+        "username": "Mete yon non itilizatè Meru ki valab : 3 a 40 karaktè (lèt, chif, pwen, tirè, tirè anba).",
+        "either": "Mete imel oswa non itilizatè kont Meru ou."
       },
       "phone": "Mete yon nimewo WhatsApp ki valab : 8 chif pou Ayiti, oswa +1 ak 10 chif.",
       "email": "Mete yon imel ki valab oswa kite kaz la vid."
@@ -72,23 +78,24 @@
   "receipt": {
     "title": "Resi ou",
     "youReceive": "Ou resevwa sou Meru",
-    "rate": "To",
-    "base": "Valè an goud",
+    "rate": "To echanj",
+    "base": "Montan konvèti",
     "total": "Total pou peye",
-    "effective": "sa vle di {rate} ak tout frè yo",
+    "effective": "To ak tout frè : {rate}",
     "percentDetail": "{value} %",
     "placeholder": "Chwazi yon montan pou wè total la an goud.",
     "frozen": "Resi sa a fikse : se egzakteman sa ou peye."
   },
   "confirm": {
     "title": "Verifye anvan ou peye",
-    "warning": "Dola yo ap ale sou <strong>{account}</strong>, nan non {name}. Yon voye sou yon move kont pa ka anile.",
+    "warningTitle": "Verifye kont k ap resevwa a",
+    "warningBody": "Dola yo ap ale sou kont sa a, nan non {name}. Yon voye sou yon move kont pa ka anile.",
     "amount": "Montan",
     "method": "Peman",
     "whatsapp": "WhatsApp",
     "email": "Imel",
     "edit": "Korije",
-    "submit": "Konfime epi kreye kòmand lan",
+    "submit": "Konfime kòmand lan",
     "submitting": "N ap kreye kòmand lan…",
     "changed": {
       "title": "To a chanje",
@@ -103,7 +110,8 @@
     "track": "Swiv kòmand sa a",
     "support": "Ekri sipò a sou WhatsApp",
     "supportMessage": "Bonjou, kòmand {reference}",
-    "pay": "Peye {total} ak {method}",
+    "pay": "Peye {total}",
+    "payWith": "ak {method}",
     "redirecting": "N ap louvri {method}…",
     "expires": "Lyen peman sa a bon jiska {time}. Apre lè sa a, w ap bezwen kreye yon lòt kòmand.",
     "sandbox": "Kòmand tès : peman an ap senp senple epi nou p ap voye okenn dola."

@@ -54,10 +54,19 @@ export function formatUsdShort(cents: number, locale: FormatLocale): string {
   return `${centsToText(cents, false)}${NBSP}${usdUnit(locale)}`;
 }
 
-/** « 1 $ US = 132,50 HTG » / « 1 dola US = 132,50 HTG » */
+/**
+ * « 1 $ US = 132,50 HTG » / « 1 dola US = 132,50 HTG »
+ *
+ * Every space is a no-break space, the two around the « = » included: a rate
+ * is one fact, and on a 360px phone the plain spaces let it split as
+ * « Taux tout compris : 1 $ US » / « = 168,00 HTG » — a line that opens on an
+ * equals sign, under the total it is supposed to explain. Unbroken it is
+ * ~170px at its longest, so it still fits the narrowest column we render it
+ * in (the receipt on a 320px screen) and simply takes its own line.
+ */
 export function formatRate(rate: number, locale: FormatLocale): string {
   const safe = Number.isFinite(rate) ? rate : 0;
-  return `1${NBSP}${usdUnit(locale)} = ${rateFormatter.format(safe)}${NBSP}HTG`;
+  return `1${NBSP}${usdUnit(locale)}${NBSP}=${NBSP}${rateFormatter.format(safe)}${NBSP}HTG`;
 }
 
 const humanFormatter = new Intl.DateTimeFormat('fr-FR', {

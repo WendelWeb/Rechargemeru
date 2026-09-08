@@ -31,10 +31,18 @@ export function RecheckButton({ reference, methodLabel, className }: RecheckButt
   const t = useTranslations('order');
   const router = useRouter();
 
+  // The action never throws; the call to it can. A Server Action invocation
+  // is a POST, and a rejected one inside `useActionState` is re-thrown during
+  // render — replacing the page somebody just paid on with an error boundary.
+  // `default:` below already knows the right sentence for that.
   const [state, formAction, pending] = useActionState<RecheckState, FormData>(async () => {
-    const result = await recheckOrder(reference);
-    if (result.orderStatus !== null && result.orderStatus !== 'pending_payment') router.refresh();
-    return { status: result.status };
+    try {
+      const result = await recheckOrder(reference);
+      if (result.orderStatus !== null && result.orderStatus !== 'pending_payment') router.refresh();
+      return { status: result.status };
+    } catch {
+      return { status: 'error' };
+    }
   }, INITIAL);
 
   function answer(status: RecheckResult['status']): string {
@@ -57,7 +65,13 @@ export function RecheckButton({ reference, methodLabel, className }: RecheckButt
 
   return (
     <form action={formAction} className={cn('space-y-2', className)}>
-      <Button type="submit" variant="ghost" loading={pending} loadingLabel={t('recheck.busy')}>
+      <Button
+        type="submit"
+        variant="ghost"
+        className="w-full sm:w-auto"
+        loading={pending}
+        loadingLabel={t('recheck.busy')}
+      >
         <RefreshCw className="size-4" aria-hidden="true" />
         {t('recheck.cta')}
       </Button>

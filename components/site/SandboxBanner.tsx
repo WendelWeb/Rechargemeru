@@ -24,7 +24,7 @@ export async function SandboxBanner() {
   const t = await getTranslations('common');
   return (
     <div role="status" className="border-b border-coral/30 bg-coral-soft">
-      <div className="mx-auto flex max-w-6xl items-start gap-3 px-4 py-2.5 text-sm text-ink sm:px-6">
+      <div className="mx-auto flex max-w-6xl items-start gap-3 px-gutter py-2.5 text-sm text-ink">
         <Chip tone="test" className="mt-0.5">
           {t('test')}
         </Chip>

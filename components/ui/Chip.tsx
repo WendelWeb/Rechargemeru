@@ -23,12 +23,12 @@ export function Chip({ tone = 'neutral', children, className, icon = tone === 't
   return (
     <span
       className={cn(
-        'inline-flex items-center gap-1 rounded-md px-1.5 py-0.5 text-xs font-semibold whitespace-nowrap',
+        'inline-flex items-center gap-1 rounded-md px-2 py-1 text-caption font-semibold whitespace-nowrap',
         TONES[tone],
         className,
       )}
     >
-      {icon ? <FlaskConical className="size-3" aria-hidden="true" /> : null}
+      {icon ? <FlaskConical className="size-3.5" aria-hidden="true" /> : null}
       {children}
     </span>
   );

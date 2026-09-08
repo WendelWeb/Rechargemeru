@@ -1,7 +1,7 @@
 'use client';
 
 import { useActionState, useState, useTransition, type ReactNode } from 'react';
-import { Ban, BellRing, NotebookPen, RefreshCw, RotateCcw, UserRoundCog, XCircle } from 'lucide-react';
+import { Ban, BellRing, ChevronDown, NotebookPen, RefreshCw, RotateCcw, UserRoundCog, XCircle } from 'lucide-react';
 import { Alert } from '@/components/ui/Alert';
 import { Button } from '@/components/ui/Button';
 import { CardTitle } from '@/components/ui/Card';
@@ -80,16 +80,25 @@ function ActionForm({
 }) {
   const [state, formAction, pending] = useActionState<ActionState, FormData>(action, {});
   return (
-    <details className="rounded-xl border border-line bg-paper open:bg-mist/30">
-      <summary className="flex cursor-pointer list-none items-center gap-2 px-4 py-3 text-sm font-semibold text-ink">
+    <details className="group rounded-xl border border-line bg-paper open:bg-mist/30">
+      {/* `list-none` alone leaves the default triangle on older WebKit — still
+          the browser on many of the phones this is used from. */}
+      <summary className="flex min-h-tap cursor-pointer list-none items-center gap-2 px-4 py-3 text-sm font-semibold text-ink [&::-webkit-details-marker]:hidden">
         {icon}
-        {title}
+        <span className="min-w-0 flex-1">{title}</span>
+        <ChevronDown className="size-4 shrink-0 text-ink-soft transition-transform group-open:rotate-180" aria-hidden="true" />
       </summary>
       <div className="border-t border-line px-4 py-4">
         <p className="mb-3 text-sm leading-snug text-ink-soft">{description}</p>
         <form action={formAction} className="space-y-3">
           {children}
-          <Button type="submit" variant={danger ? 'danger' : 'dark'} loading={pending} loadingLabel="Enregistrement…">
+          <Button
+            type="submit"
+            variant={danger ? 'danger' : 'dark'}
+            loading={pending}
+            loadingLabel="Enregistrement…"
+            className="w-full sm:w-auto"
+          >
             {submitLabel}
           </Button>
         </form>
@@ -132,14 +141,14 @@ export function OrderActions({
   const canCorrect = status !== 'fulfilled';
 
   return (
-    <section aria-labelledby="actions-title" className="rounded-card border border-line bg-paper p-5 shadow-card sm:p-6">
+    <section aria-labelledby="actions-title" className="rounded-card border border-line bg-paper p-4 shadow-card sm:p-6">
       <CardTitle as="h2" className="mb-4">
         <span id="actions-title">Actions</span>
       </CardTitle>
 
       <div className="flex flex-col gap-3 sm:flex-row">
         <ActionButton
-          label="Re-vérifier auprès du fournisseur"
+          label="Re-vérifier le paiement"
           busyLabel="Vérification…"
           icon={<RefreshCw className="size-4" aria-hidden="true" />}
           run={() => recheckAction(orderId)}
@@ -200,7 +209,7 @@ export function OrderActions({
               name="note"
               rows={3}
               defaultValue={adminNote ?? ''}
-              className="block w-full rounded-xl border border-line bg-paper px-3.5 py-2.5 text-base text-ink placeholder:text-ink-muted hover:border-ink-muted focus-visible:border-ink"
+              className="block w-full rounded-xl border border-line-strong bg-paper px-3.5 py-2.5 text-base text-ink placeholder:text-ink-muted transition-colors hover:border-ink focus-visible:border-ink"
             />
           </div>
         </ActionForm>

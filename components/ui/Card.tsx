@@ -10,11 +10,12 @@ const TONES: Record<CardTone, string> = {
   ink: 'bg-ink text-paper',
 };
 
+/* Fluid: 16px of breathing room on a phone, 24-32px on a desk. */
 const PADDINGS: Record<CardPadding, string> = {
   none: '',
   sm: 'p-4',
-  md: 'p-5 sm:p-6',
-  lg: 'p-6 sm:p-8',
+  md: 'p-card',
+  lg: 'p-card sm:p-8',
 };
 
 export type CardProps = Omit<ComponentProps<'div'>, 'children' | 'className' | 'ref'> & {
@@ -34,12 +35,28 @@ export function Card({ as: Tag = 'div', tone = 'paper', padding = 'md', classNam
   );
 }
 
+export type CardTitleSize = 'sm' | 'md' | 'lg';
+
+/*
+ * `cn()` joins, it does not merge: a `className="text-xl"` passed next to the
+ * built-in size wins only by accident of stylesheet order. So the size is a
+ * prop, and no caller has to fight the component.
+ */
+const TITLE_SIZES: Record<CardTitleSize, string> = {
+  sm: 'text-body',
+  md: 'text-lg',
+  lg: 'text-title',
+};
+
 export type CardTitleProps = {
   as?: 'h1' | 'h2' | 'h3' | 'h4';
+  size?: CardTitleSize;
   className?: string;
   children: ReactNode;
 };
 
-export function CardTitle({ as: Tag = 'h2', className, children }: CardTitleProps) {
-  return <Tag className={cn('font-display text-lg font-semibold tracking-tight', className)}>{children}</Tag>;
+export function CardTitle({ as: Tag = 'h2', size = 'md', className, children }: CardTitleProps) {
+  return (
+    <Tag className={cn('font-display font-semibold tracking-tight', TITLE_SIZES[size], className)}>{children}</Tag>
+  );
 }

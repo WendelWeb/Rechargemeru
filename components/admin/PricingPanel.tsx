@@ -103,7 +103,7 @@ function PanelField({
         {label}
       </label>
       {children}
-      {error ? <p className="mt-1 text-xs text-coral">{error}</p> : null}
+      {error ? <p className="mt-1 text-xs text-coral-deep">{error}</p> : null}
       {hint ? <p className="mt-1 text-xs leading-snug text-ink-muted">{hint}</p> : null}
     </div>
   );
@@ -146,7 +146,7 @@ function KreyolLabel({
         invalid={Boolean(error)}
       />
       {error ? (
-        <p className="mt-1 text-xs text-coral">{error}</p>
+        <p className="mt-1 text-xs text-coral-deep">{error}</p>
       ) : (
         <p className="mt-1 text-xs text-ink-muted">Vide : le client sur /ht lit « {frLabel} ».</p>
       )}
@@ -162,7 +162,7 @@ function Switch({ checked, onChange, children }: { checked: boolean; onChange: (
       role="switch"
       aria-checked={checked}
       onClick={() => onChange(!checked)}
-      className="inline-flex min-h-9 items-center gap-2.5 rounded-xl text-sm font-medium text-ink"
+      className="inline-flex min-h-tap items-center gap-2.5 rounded-xl text-sm font-medium text-ink"
     >
       <span
         aria-hidden="true"
@@ -279,7 +279,7 @@ export function PricingPanel({
   const transferHtg = lineHtg(PRICING_RULE_IDS.transfer);
 
   return (
-    <section className="rounded-card border border-line bg-paper p-5 shadow-card sm:p-6">
+    <section className="rounded-card border border-line bg-paper p-4 shadow-card sm:p-6">
       <CardTitle as="h2">Tarification</CardTitle>
       <p className="mt-1 mb-4 max-w-3xl text-sm leading-snug text-ink-soft">
         Les quatre valeurs qui décident du prix affiché au client. L’aperçu se recalcule à chaque frappe ; rien n’est

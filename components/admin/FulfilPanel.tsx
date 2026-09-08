@@ -48,6 +48,12 @@ export type FulfilPanelProps = {
  * stranger — and only then (3) the « Marquer rechargée » button, behind an
  * explicit confirmation. A sandbox order shows a red banner instead of the
  * chips: there is nothing to send.
+ *
+ * Nothing here is ever truncated. A Meru identifier is usually an email
+ * address — one unbreakable 30-character word — and the two places it used to
+ * be cut short, the copy row and the confirmation, are precisely the two
+ * places where the operator is checking that the dollars are about to leave
+ * for the right person.
  */
 export function FulfilPanel(props: FulfilPanelProps) {
   const {
@@ -79,6 +85,9 @@ export function FulfilPanel(props: FulfilPanelProps) {
   const sandbox = mode === 'sandbox';
   const done = status === 'fulfilled';
   const amountPlain = usdPlain(usdCents);
+  // Controlled, so the confirmation below can name the amount that is really
+  // about to be recorded rather than the one this field started with.
+  const [sentUsd, setSentUsd] = useState(amountPlain);
 
   function noteManualWhatsApp() {
     startRecording(async () => {
@@ -104,7 +113,7 @@ export function FulfilPanel(props: FulfilPanelProps) {
     return (
       <section
         aria-labelledby="fulfil-title"
-        className="rounded-card border border-mint/40 bg-mint-soft p-5 sm:p-6"
+        className="rounded-card border border-mint/40 bg-mint-soft p-4 sm:p-6"
       >
         <div className="flex items-start gap-3">
           <CircleCheck className="mt-0.5 size-6 shrink-0 text-mint" aria-hidden="true" />
@@ -113,8 +122,14 @@ export function FulfilPanel(props: FulfilPanelProps) {
               Dollars envoyés
             </h2>
             <p className="mt-1 text-[15px] leading-snug text-ink-soft">
-              {formatUsd(fulfilledUsdCents ?? usdCents, 'fr')} envoyés à {meruAccount}
-              {meruReference ? ` — référence Meru ${meruReference}` : ''}
+              {formatUsd(fulfilledUsdCents ?? usdCents, 'fr')} envoyés à{' '}
+              <span className="font-medium break-all text-ink">{meruAccount}</span>
+              {meruReference ? (
+                <>
+                  {' — référence Meru '}
+                  <span className="break-all">{meruReference}</span>
+                </>
+              ) : null}
               {fulfilledAt ? `, le ${formatDateTime(fulfilledAt)}` : ''}.
             </p>
             {whatsappButton ? <div className="mt-4">{whatsappButton}</div> : null}
@@ -127,7 +142,10 @@ export function FulfilPanel(props: FulfilPanelProps) {
   }
 
   return (
-    <section aria-labelledby="fulfil-title" className="rounded-card border border-line bg-paper p-5 shadow-lift sm:p-6">
+    <section
+      aria-labelledby="fulfil-title"
+      className="rounded-card border border-line bg-paper p-4 shadow-lift sm:p-6"
+    >
       <div className="flex flex-wrap items-baseline justify-between gap-2">
         <h2 id="fulfil-title" className="font-display text-lg font-semibold tracking-tight text-ink">
           Recharger cette commande
@@ -153,8 +171,17 @@ export function FulfilPanel(props: FulfilPanelProps) {
 
       {sandbox ? null : (
         <div className="mt-4 space-y-2">
-          <CopyRow label={meruAccountLabelFr(meruAccountType)} value={meruAccount} />
-          <CopyRow label="Montant à envoyer" value={amountPlain} suffix={formatUsd(usdCents, 'fr')} />
+          <CopyRow
+            label={meruAccountLabelFr(meruAccountType)}
+            value={meruAccount}
+            copyLabel="Copier l’identifiant"
+          />
+          <CopyRow
+            label="Montant à envoyer"
+            value={amountPlain}
+            suffix={formatUsd(usdCents, 'fr')}
+            copyLabel="Copier le montant"
+          />
         </div>
       )}
 
@@ -168,7 +195,8 @@ export function FulfilPanel(props: FulfilPanelProps) {
               id="fulfilledUsd"
               name="fulfilledUsd"
               inputMode="decimal"
-              defaultValue={amountPlain}
+              value={sentUsd}
+              onChange={(event) => setSentUsd(event.target.value)}
               mono
               aria-describedby="fulfilledUsd-hint"
             />
@@ -188,15 +216,28 @@ export function FulfilPanel(props: FulfilPanelProps) {
         {confirming ? (
           <div className="rounded-xl border border-sun bg-sun-soft p-4">
             <p className="flex items-start gap-2 text-[15px] leading-snug text-ink">
-              <TriangleAlert className="mt-0.5 size-5 shrink-0 text-sun-deep" aria-hidden="true" />
-              <span>
-                Confirmez que les dollars sont <strong>déjà partis</strong> vers {meruAccount} pour {customerName}. Un
-                envoi vers un mauvais compte ne peut pas être annulé.
+              <TriangleAlert className="mt-0.5 size-5 shrink-0 text-sun-ink" aria-hidden="true" />
+              <span className="min-w-0">
+                Confirmez que les dollars sont <strong>déjà partis</strong>. Un envoi vers un mauvais compte ne peut
+                pas être annulé.
               </span>
             </p>
+
+            {/* The two facts being confirmed, on their own lines and whole.
+                Buried in a sentence, a 30-character address ran off the edge
+                of the screen — unreadable exactly where it matters most. */}
+            <dl className="mt-3 rounded-lg bg-paper/70 p-3">
+              <dt className="text-xs font-medium text-ink-soft">Vers</dt>
+              <dd className="font-display text-base leading-snug font-semibold break-all text-ink">{meruAccount}</dd>
+              <dt className="mt-2 text-xs font-medium text-ink-soft">Pour</dt>
+              <dd className="text-[15px] leading-snug break-words text-ink">{customerName}</dd>
+              <dt className="mt-2 text-xs font-medium text-ink-soft">Montant enregistré</dt>
+              <dd className="font-display text-base font-semibold tnum text-ink">{sentUsd} $ US</dd>
+            </dl>
+
             <div className="mt-3 flex flex-col gap-2 sm:flex-row">
               <Button type="submit" size="lg" loading={pending} loadingLabel="Enregistrement…" className="sm:flex-1">
-                Oui, j’ai envoyé les dollars
+                Oui, c’est envoyé
               </Button>
               <Button type="button" variant="ghost" size="lg" onClick={() => setConfirming(false)}>
                 Revenir
@@ -230,17 +271,41 @@ export function FulfilPanel(props: FulfilPanelProps) {
   );
 }
 
-function CopyRow({ label, value, suffix }: { label: string; value: string; suffix?: string }) {
+/**
+ * One value to carry into the Meru app, with the button that copies it.
+ *
+ * On a phone the value takes the full width and the button sits under it, at
+ * full width too: an email address may break anywhere it must, and the thing
+ * the thumb has to hit is a bar, not a 100px chip in the corner.
+ */
+function CopyRow({
+  label,
+  value,
+  suffix,
+  copyLabel,
+}: {
+  label: string;
+  value: string;
+  suffix?: string;
+  copyLabel: string;
+}) {
   return (
-    <div className="flex items-center gap-3 rounded-xl bg-mist px-3 py-2.5">
+    <div className="flex flex-col gap-2 rounded-xl bg-mist px-3 py-2.5 sm:flex-row sm:items-center sm:gap-3">
       <div className="min-w-0 flex-1">
         <p className="text-xs text-ink-soft">{label}</p>
-        <p className="truncate font-display text-lg font-semibold tracking-tight tnum text-ink">
+        <p className="font-display text-lg leading-snug font-semibold tracking-tight break-all tnum text-ink">
           {value}
           {suffix ? <span className="ml-2 text-sm font-normal text-ink-muted">{suffix}</span> : null}
         </p>
       </div>
-      <CopyButton value={value} label="Copier" copiedLabel="Copié" size="sm" variant="ghost" />
+      <CopyButton
+        value={value}
+        label={copyLabel}
+        copiedLabel="Copié"
+        size="md"
+        variant="ghost"
+        className="w-full sm:w-auto"
+      />
     </div>
   );
 }

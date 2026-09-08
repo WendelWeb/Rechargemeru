@@ -198,7 +198,7 @@ export function FeeRulesEditor({ rules, onChange, fieldErrors = {} }: FeeRulesEd
               ? 'Les règles réglées dans le panneau de tarification sont incluses.'
               : `${panelRules.length} règle(s) du panneau de tarification ne sont pas listées ici.`}
           </p>
-          <label className="inline-flex items-center gap-2 text-sm text-ink">
+          <label className="inline-flex min-h-11 items-center gap-2.5 text-sm text-ink">
             <input
               type="checkbox"
               checked={everything}
@@ -258,7 +258,7 @@ export function FeeRulesEditor({ rules, onChange, fieldErrors = {} }: FeeRulesEd
                   placeholder="Frais de service"
                   invalid={Boolean(errorFor('label'))}
                 />
-                {errorFor('label') ? <p className="mt-1 text-xs text-coral">{errorFor('label')}</p> : null}
+                {errorFor('label') ? <p className="mt-1 text-xs text-coral-deep">{errorFor('label')}</p> : null}
               </div>
 
               {/* Half the site reads in Kreyòl. A fee left untranslated keeps
@@ -277,7 +277,7 @@ export function FeeRulesEditor({ rules, onChange, fieldErrors = {} }: FeeRulesEd
                   invalid={Boolean(errorFor('labelHt'))}
                 />
                 {errorFor('labelHt') ? (
-                  <p className="mt-1 text-xs text-coral">{errorFor('labelHt')}</p>
+                  <p className="mt-1 text-xs text-coral-deep">{errorFor('labelHt')}</p>
                 ) : (
                   <p className="mt-1 text-xs text-ink-muted">
                     Vide : le client sur /ht lit le libellé français.
@@ -321,7 +321,7 @@ export function FeeRulesEditor({ rules, onChange, fieldErrors = {} }: FeeRulesEd
                   mono
                   invalid={Boolean(errorFor('value'))}
                 />
-                {errorFor('value') ? <p className="mt-1 text-xs text-coral">{errorFor('value')}</p> : null}
+                {errorFor('value') ? <p className="mt-1 text-xs text-coral-deep">{errorFor('value')}</p> : null}
                 {rule.kind === 'fixed_usd' ? (
                   <p className="mt-1 text-xs text-ink-muted">Converti au taux de chaque commande.</p>
                 ) : null}
@@ -362,7 +362,7 @@ export function FeeRulesEditor({ rules, onChange, fieldErrors = {} }: FeeRulesEd
                 </Select>
               </div>
 
-              <div className="grid grid-cols-2 gap-2">
+              <div className="grid gap-3 sm:grid-cols-2">
                 <div>
                   <label className={labelClass} htmlFor={`rule-min-${rule.id}`}>
                     Min. HTG
@@ -400,10 +400,10 @@ export function FeeRulesEditor({ rules, onChange, fieldErrors = {} }: FeeRulesEd
               </div>
             </div>
 
-            {errorFor('maxHtg') ? <p className="mt-2 text-xs text-coral">{errorFor('maxHtg')}</p> : null}
+            {errorFor('maxHtg') ? <p className="mt-2 text-xs text-coral-deep">{errorFor('maxHtg')}</p> : null}
 
             <div className="mt-3 flex flex-wrap items-center justify-between gap-3">
-              <label className="inline-flex items-center gap-2 text-sm text-ink">
+              <label className="inline-flex min-h-11 items-center gap-2.5 text-sm text-ink">
                 <input
                   type="checkbox"
                   checked={rule.enabled}
@@ -434,7 +434,12 @@ export function FeeRulesEditor({ rules, onChange, fieldErrors = {} }: FeeRulesEd
         );
       })}
 
-      <Button type="button" variant="ghost" size="sm" onClick={() => onChange([...rules, newDraft(rules.length)])}>
+      <Button
+        type="button"
+        variant="ghost"
+        onClick={() => onChange([...rules, newDraft(rules.length)])}
+        className="w-full sm:w-auto"
+      >
         <Plus className="size-4" aria-hidden="true" />
         Ajouter une règle
       </Button>

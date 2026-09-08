@@ -19,7 +19,8 @@
     "pending": {
       "title": "N ap tann peman ou",
       "body": "Kòmand ou pare. Fini peman an ak {method} pou nou ka voye dola ou yo.",
-      "cta": "Peye {total} ak {method}",
+      "cta": "Peye {total}",
+      "ctaWith": "ak {method}",
       "expiresAt": "Lyen peman sa a bon jiska {time}.",
       "expiredTitle": "Lyen peman an ekspire",
       "expiredBody": "Lyen sa a pa bon ankò. Kreye yon lòt kòmand : n ap kalkile to a ak frè yo ankò."

@@ -11,9 +11,9 @@ import { buttonClasses } from '@/components/ui/Button';
 export default async function LocaleNotFound() {
   const t = await getTranslations('common');
   return (
-    <section className="mx-auto flex max-w-xl flex-col items-start gap-5 px-4 py-20 sm:px-6 sm:py-28">
-      <h1 className="font-display text-4xl font-semibold tracking-tight text-ink sm:text-5xl">{t('notFound.title')}</h1>
-      <p className="max-w-md text-lg leading-relaxed text-ink-soft">{t('notFound.body')}</p>
+    <section className="mx-auto flex max-w-xl flex-col items-start gap-5 px-gutter py-16 sm:py-28">
+      <h1 className="font-display text-hero font-semibold tracking-tight text-ink">{t('notFound.title')}</h1>
+      <p className="max-w-md text-lead leading-relaxed text-ink-soft">{t('notFound.body')}</p>
       <Link href="/" className={buttonClasses('dark', 'lg')}>
         <ArrowLeft className="size-4" aria-hidden="true" />
         {t('notFound.back')}

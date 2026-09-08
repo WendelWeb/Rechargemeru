@@ -19,7 +19,8 @@
     "pending": {
       "title": "En attente de votre paiement",
       "body": "Votre commande est prête. Terminez le paiement avec {method} pour que nous envoyions vos dollars.",
-      "cta": "Payer {total} avec {method}",
+      "cta": "Payer {total}",
+      "ctaWith": "avec {method}",
       "expiresAt": "Ce lien de paiement est valable jusqu'à {time}.",
       "expiredTitle": "Le lien de paiement a expiré",
       "expiredBody": "Ce lien n'est plus valable. Créez une nouvelle commande : le taux et les frais seront recalculés."

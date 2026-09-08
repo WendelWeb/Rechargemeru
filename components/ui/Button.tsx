@@ -4,20 +4,32 @@ import { cn } from '@/lib/cn';
 export type ButtonVariant = 'primary' | 'dark' | 'secondary' | 'ghost' | 'danger';
 export type ButtonSize = 'sm' | 'md' | 'lg';
 
+/*
+ * No `whitespace-nowrap` here, on purpose. Every button that takes money
+ * carries an interpolated label — « Payer 3 360 HTG avec MonCash » — whose
+ * length is decided at runtime by the amount. Forbidding a line break made
+ * that label spill out of its pill and pushed the whole document sideways on
+ * a 360px screen. It wraps now, centred and balanced; a toolbar button that
+ * really must stay on one line asks for it with `nowrap`.
+ */
 const BASE =
-  'inline-flex items-center justify-center gap-2 rounded-xl font-semibold whitespace-nowrap select-none transition-[background-color,border-color,transform] duration-150 active:translate-y-px disabled:cursor-not-allowed disabled:opacity-50 disabled:active:translate-y-0';
+  'inline-flex items-center justify-center gap-2 rounded-xl text-center font-semibold text-pretty select-none transition-[background-color,border-color,transform] duration-150 active:translate-y-px disabled:cursor-not-allowed disabled:opacity-50 disabled:active:translate-y-0';
 
+/*
+ * `sm` is 44px under the thumb and 36px under a mouse: the visual density of
+ * an admin toolbar survives, the tap target does not shrink on a phone.
+ */
 const SIZES: Record<ButtonSize, string> = {
-  sm: 'min-h-9 px-3.5 text-sm',
+  sm: 'min-h-tap px-3.5 text-sm sm:min-h-9',
   md: 'min-h-11 px-5 text-[15px]',
-  lg: 'min-h-13 px-7 text-base',
+  lg: 'min-h-13 px-5 text-base sm:px-7',
 };
 
 const VARIANTS: Record<ButtonVariant, string> = {
   primary: 'bg-sun text-ink hover:bg-sun-deep',
   dark: 'bg-ink text-paper hover:bg-ink-hover',
   secondary: 'bg-mist text-ink hover:bg-line',
-  ghost: 'border border-line bg-paper text-ink hover:border-ink-muted hover:bg-mist/60',
+  ghost: 'border border-line-strong bg-paper text-ink hover:border-ink hover:bg-mist/60',
   danger: 'bg-coral text-paper hover:bg-coral-deep',
 };
 
@@ -45,6 +57,8 @@ export type ButtonProps = ComponentProps<'button'> & {
   /** Shows a spinner, disables the button and swaps the label for `loadingLabel` when given. */
   loading?: boolean;
   loadingLabel?: string;
+  /** Keeps the label on one line (short, fixed labels only). */
+  nowrap?: boolean;
 };
 
 export function Button({
@@ -53,6 +67,7 @@ export function Button({
   className,
   loading = false,
   loadingLabel,
+  nowrap = false,
   disabled,
   children,
   type = 'button',
@@ -61,7 +76,7 @@ export function Button({
   return (
     <button
       type={type}
-      className={buttonClasses(variant, size, className)}
+      className={buttonClasses(variant, size, cn(nowrap && 'whitespace-nowrap', className))}
       disabled={disabled || loading}
       aria-busy={loading || undefined}
       {...props}

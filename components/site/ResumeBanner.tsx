@@ -25,7 +25,7 @@ export function ResumeBanner({ reference, statusLabel, className }: ResumeBanner
       title={t('resume.title')}
       className={className}
       actions={
-        <Link href={`/commande/${reference}`} className={buttonClasses('dark', 'sm')}>
+        <Link href={`/commande/${reference}`} className={buttonClasses('dark', 'md', 'w-full sm:w-auto')}>
           {t('resume.cta')}
           <ArrowRight className="size-4" aria-hidden="true" />
         </Link>

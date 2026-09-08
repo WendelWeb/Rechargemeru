@@ -77,7 +77,13 @@ export function CopyButton({
     <button
       type="button"
       onClick={onClick}
-      className={buttonClasses(variant, size, cn(iconOnly && 'px-2.5', copied && 'text-mint-deep', className))}
+      className={buttonClasses(
+        variant,
+        size,
+        // Icon-only still has to be 44px wide under a thumb: `min-w-tap`
+        // rather than a narrower padding that `cn()` could not have applied.
+        cn(iconOnly && 'min-w-tap justify-center', copied && 'text-mint-deep', className),
+      )}
       aria-label={iconOnly ? `${label} : ${value}` : undefined}
       title={iconOnly ? label : undefined}
     >

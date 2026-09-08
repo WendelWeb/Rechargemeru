@@ -41,12 +41,22 @@ function plainToCents(raw: string): number {
   return Math.round(toNumber(raw) * 100);
 }
 
-const textareaClass =
-  'block w-full rounded-xl border border-line bg-paper px-3.5 py-2.5 text-base text-ink placeholder:text-ink-muted hover:border-ink-muted focus-visible:border-ink';
+const textareaBase =
+  'block w-full rounded-xl border bg-paper px-3.5 py-2.5 text-base text-ink placeholder:text-ink-muted transition-colors hover:border-ink focus-visible:border-ink';
+
+/**
+ * The border colour is chosen, never layered: `cn()` has no tailwind-merge and
+ * the generated sheet lists `.border-line-strong` after `.border-coral-deep`,
+ * so an element carrying both would quietly keep the grey one and a refused
+ * field would look accepted.
+ */
+function textareaClasses(invalid: unknown): string {
+  return cn(textareaBase, invalid ? 'border-coral-deep' : 'border-line-strong');
+}
 
 function Section({ title, description, children }: { title: string; description?: string; children: ReactNode }) {
   return (
-    <section className="rounded-card border border-line bg-paper p-5 shadow-card sm:p-6">
+    <section className="rounded-card border border-line bg-paper p-4 shadow-card sm:p-6">
       <CardTitle as="h2">{title}</CardTitle>
       {description ? <p className="mt-1 mb-4 text-sm leading-snug text-ink-soft">{description}</p> : <div className="mb-4" />}
       {children}
@@ -75,7 +85,7 @@ function FieldBlock({
         {label}
       </label>
       {children}
-      {error ? <p className="mt-1 text-xs text-coral">{error}</p> : null}
+      {error ? <p className="mt-1 text-xs text-coral-deep">{error}</p> : null}
       {hint ? <p className="mt-1 text-xs text-ink-muted">{hint}</p> : null}
     </div>
   );
@@ -100,7 +110,7 @@ function CheckboxGrid({
       <p className="mt-0.5 mb-2 text-xs text-ink-muted">{description}</p>
       <div className="grid gap-1.5 sm:grid-cols-2">
         {options.map((option) => (
-          <label key={option.value} className="inline-flex items-center gap-2 text-sm text-ink">
+          <label key={option.value} className="flex min-h-11 items-center gap-2.5 text-sm text-ink">
             <input
               type="checkbox"
               name={name}
@@ -160,7 +170,7 @@ export function SettingsForm({ settings }: SettingsFormProps) {
         title="Règles de frais avancées"
         description="Pour ce qui sort des quatre valeurs ci-dessus : un frais propre à une méthode, un plancher, un plafond. Les règles s’appliquent dans l’ordre où elles sont listées."
       >
-        {errors.feeRules ? <p className="mb-2 text-xs text-coral">{errors.feeRules}</p> : null}
+        {errors.feeRules ? <p className="mb-2 text-xs text-coral-deep">{errors.feeRules}</p> : null}
         <FeeRulesEditor rules={rules} onChange={setRules} fieldErrors={errors} />
       </Section>
 
@@ -255,7 +265,8 @@ export function SettingsForm({ settings }: SettingsFormProps) {
               name="adminEmails"
               rows={3}
               defaultValue={settings.adminEmails.join('\n')}
-              className={cn(textareaClass, errors.adminEmails && 'border-coral')}
+              aria-invalid={Boolean(errors.adminEmails) || undefined}
+              className={textareaClasses(errors.adminEmails)}
             />
           </FieldBlock>
           <FieldBlock
@@ -269,7 +280,8 @@ export function SettingsForm({ settings }: SettingsFormProps) {
               name="adminWhatsappNumbers"
               rows={3}
               defaultValue={settings.adminWhatsappNumbers.join('\n')}
-              className={cn(textareaClass, errors.adminWhatsappNumbers && 'border-coral')}
+              aria-invalid={Boolean(errors.adminWhatsappNumbers) || undefined}
+              className={textareaClasses(errors.adminWhatsappNumbers)}
             />
           </FieldBlock>
         </div>
@@ -300,7 +312,7 @@ export function SettingsForm({ settings }: SettingsFormProps) {
           options={MERU_ACCOUNT_TYPES.map((type) => ({ value: type, label: meruAccountLabelFr(type) }))}
           selected={settings.meruAccountTypes}
         />
-        {errors.meruAccountTypes ? <p className="mt-1 text-xs text-coral">{errors.meruAccountTypes}</p> : null}
+        {errors.meruAccountTypes ? <p className="mt-1 text-xs text-coral-deep">{errors.meruAccountTypes}</p> : null}
 
         <div className="mt-5 grid gap-4 sm:grid-cols-2">
           <FieldBlock id="meruHelpFr" label="Aide, en français" error={errors.meruHelpFr}>
@@ -311,7 +323,8 @@ export function SettingsForm({ settings }: SettingsFormProps) {
               maxLength={600}
               required
               defaultValue={settings.meruHelpFr}
-              className={cn(textareaClass, errors.meruHelpFr && 'border-coral')}
+              aria-invalid={Boolean(errors.meruHelpFr) || undefined}
+              className={textareaClasses(errors.meruHelpFr)}
             />
           </FieldBlock>
           <FieldBlock id="meruHelpHt" label="Aide, en kreyòl" error={errors.meruHelpHt}>
@@ -322,7 +335,8 @@ export function SettingsForm({ settings }: SettingsFormProps) {
               maxLength={600}
               required
               defaultValue={settings.meruHelpHt}
-              className={cn(textareaClass, errors.meruHelpHt && 'border-coral')}
+              aria-invalid={Boolean(errors.meruHelpHt) || undefined}
+              className={textareaClasses(errors.meruHelpHt)}
             />
           </FieldBlock>
         </div>
@@ -396,7 +410,7 @@ export function SettingsForm({ settings }: SettingsFormProps) {
       {state.message ? <Alert tone="success">{state.message}</Alert> : null}
 
       <div className="flex flex-wrap items-center gap-3">
-        <Button type="submit" size="lg" loading={pending} loadingLabel="Enregistrement…">
+        <Button type="submit" size="lg" loading={pending} loadingLabel="Enregistrement…" className="w-full sm:w-auto">
           <Save className="size-4" aria-hidden="true" />
           Enregistrer les paramètres
         </Button>

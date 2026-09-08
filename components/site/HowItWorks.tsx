@@ -26,14 +26,14 @@ export function HowItWorks({ min, max, sla, className }: HowItWorksProps) {
   const t = useTranslations('home');
 
   return (
-    <section className={cn('mx-auto max-w-6xl px-4 sm:px-6', className)} aria-labelledby="how-it-works">
-      <h2 id="how-it-works" className="font-display text-2xl font-semibold tracking-tight text-ink sm:text-3xl">
+    <section className={cn('mx-auto max-w-6xl px-gutter', className)} aria-labelledby="how-it-works">
+      <h2 id="how-it-works" className="font-display text-title font-semibold tracking-tight text-ink">
         {t('how.title')}
       </h2>
       <ol className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         {STEPS.map(({ key, Icon }) => (
-          <li key={key} className="rounded-card border border-line bg-paper p-5 shadow-card">
-            <Icon className="size-6 text-sun-deep" aria-hidden="true" />
+          <li key={key} className="rounded-card border border-line bg-paper p-card shadow-card">
+            <Icon className="size-6 text-sun-ink" aria-hidden="true" />
             <h3 className="mt-3 font-display text-base font-semibold text-ink">{t(`how.steps.${key}.title`)}</h3>
             <p className="mt-1.5 text-sm leading-relaxed text-ink-soft">
               {t(`how.steps.${key}.body`, { min, max, sla })}

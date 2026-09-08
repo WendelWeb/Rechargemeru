@@ -50,9 +50,9 @@ export default async function TermsPage({ params }: TermsPageProps) {
   };
 
   return (
-    <div className="mx-auto max-w-3xl px-4 py-10 sm:px-6 sm:py-14">
+    <div className="mx-auto max-w-3xl px-gutter py-10 sm:py-14">
       <header className="space-y-3">
-        <h1 className="font-display text-3xl font-bold tracking-tight text-ink sm:text-4xl">{t('title')}</h1>
+        <h1 className="font-display text-hero font-bold tracking-tight text-ink">{t('title')}</h1>
         <p className="text-[15px] leading-relaxed text-ink-soft">{t('lead')}</p>
         <p className="text-sm text-ink-muted">{t('updated')}</p>
       </header>

@@ -148,8 +148,13 @@ export function OrderStatusView({
       ? t('states.pending.expiresAt', { time: formatDateTime(order.redirectExpiresAt) })
       : null;
     actions = (
-      <a href={payUrl} rel="noopener" className={buttonClasses('dark', 'lg')}>
-        {t('states.pending.cta', { total: formatHtg(order.totalHtg), method: methodLabel })}
+      <a href={payUrl} rel="noopener" className={buttonClasses('dark', 'lg', 'w-full sm:w-auto')}>
+        <span className="flex flex-col items-center leading-tight">
+          <span>{t('states.pending.cta', { total: formatHtg(order.totalHtg) })}</span>
+          <span className="text-caption font-normal opacity-80">
+            {t('states.pending.ctaWith', { method: methodLabel })}
+          </span>
+        </span>
       </a>
     );
     extra = <RecheckButton reference={order.reference} methodLabel={methodLabel} />;
@@ -220,18 +225,31 @@ export function OrderStatusView({
   }
 
   return (
-    <div className="mx-auto max-w-3xl space-y-6 px-4 py-8 sm:px-6 sm:py-12">
+    <div className="mx-auto max-w-3xl space-y-6 px-gutter py-8 sm:py-12">
       <header className="space-y-3">
         <div className="flex flex-wrap items-center gap-2">
-          <StatusPill status={order.status} label={c(`status.${order.status}`)} />
+          {/*
+            The pill says what the panel below says, never something else. A
+            customer who has just paid over a bad connection reads the two
+            together: « En attente de paiement » in grey above « Nous
+            vérifions votre paiement » is a contradiction at the one moment
+            the page has to be believed. While the verification window is
+            open the pill carries that state, in the same sun tone as the
+            panel's accent.
+          */}
+          <StatusPill
+            status={order.status}
+            tone={order.checking ? 'action' : undefined}
+            label={order.checking ? c('status.checking') : c(`status.${order.status}`)}
+          />
           <MethodBadge method={order.method} size="sm" />
           {order.mode === 'sandbox' ? <Chip tone="test">{c('test')}</Chip> : null}
         </div>
         <div className="flex flex-wrap items-center gap-3">
-          <h1 className="font-display text-2xl font-bold tracking-tight text-ink sm:text-3xl">
+          <h1 className="font-display text-title font-bold tracking-tight text-ink">
             <span className="tnum">{t('heading', { reference: order.reference })}</span>
           </h1>
-          <CopyButton value={order.reference} label={c('copy')} copiedLabel={c('copied')} />
+          <CopyButton value={order.reference} label={c('copy')} copiedLabel={c('copied')} size="md" />
         </div>
       </header>
 
@@ -242,7 +260,7 @@ export function OrderStatusView({
         <div className="flex items-start gap-3.5">
           <Icon className="mt-0.5 size-6 shrink-0 text-ink" aria-hidden="true" />
           <div className="min-w-0 flex-1 space-y-3">
-            <CardTitle as="h2" className="text-xl">
+            <CardTitle as="h2" size="lg">
               {title}
             </CardTitle>
             <p className="text-[15px] leading-relaxed text-ink-soft">{body}</p>
@@ -279,7 +297,7 @@ export function OrderStatusView({
         {fullOrder ? null : (
           <div className="mt-4 space-y-3 border-t border-line pt-4">
             <p className="text-sm leading-relaxed text-ink-soft">{t('details.masked')}</p>
-            <Link href="/suivi" className={buttonClasses('ghost', 'sm')}>
+            <Link href="/suivi" className={buttonClasses('ghost', 'md', 'w-full sm:w-auto')}>
               <Search className="size-4" aria-hidden="true" />
               {t('details.maskedCta')}
             </Link>

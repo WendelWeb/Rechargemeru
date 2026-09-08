@@ -23,8 +23,8 @@ export async function SiteFooter({ businessName, supportWhatsapp }: SiteFooterPr
   const year = new Date().getFullYear();
 
   return (
-    <footer data-surface="dark" className="mt-16 bg-ink text-paper/80">
-      <div className="mx-auto max-w-6xl px-4 py-12 sm:px-6">
+    <footer data-surface="dark" className="mt-section bg-ink text-paper/80">
+      <div className="mx-auto max-w-6xl px-gutter py-section">
         <div className="grid gap-10 md:grid-cols-[1.5fr_1fr_1.2fr]">
           <div className="space-y-4">
             <Wordmark name={businessName} tone="paper" />
@@ -32,11 +32,18 @@ export async function SiteFooter({ businessName, supportWhatsapp }: SiteFooterPr
             <p className="max-w-sm text-sm text-paper/60">{t('currencyNote')}</p>
           </div>
 
-          <nav aria-label={t('brand')}>
-            <ul className="space-y-2.5">
+          {/* `min-h-tap` is what makes these four links touchable: bare
+              text at 15px with no padding was an 18px target, ten pixels from
+              the next one. The height also does the spacing, so the list has
+              none of its own. */}
+          <nav aria-label={t('nav.footer')}>
+            <ul>
               {NAV.map((item) => (
                 <li key={item.key}>
-                  <Link href={item.href} className="rounded text-[15px] text-paper/85 hover:text-sun">
+                  <Link
+                    href={item.href}
+                    className="inline-flex min-h-tap items-center rounded-lg text-body text-paper/85 transition-colors hover:text-sun"
+                  >
                     {t(`nav.${item.key}`)}
                   </Link>
                 </li>

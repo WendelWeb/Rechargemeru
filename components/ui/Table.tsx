@@ -6,12 +6,36 @@ export type TableProps = Omit<ComponentProps<'table'>, 'ref'> & {
   wrapperClassName?: string;
   /** Minimum width before the wrapper scrolls horizontally. */
   minWidthClassName?: string;
+  /**
+   * Names the scrolling region, e.g. « Liste des commandes ». Given one, the
+   * box becomes a labelled landmark; without a name a `role="region"` would
+   * be worse than none, so it stays a plain focusable scroller.
+   */
+  label?: string;
 };
 
-/** A data table that scrolls inside its own box instead of the page. */
-export function Table({ className, wrapperClassName, minWidthClassName = 'min-w-[40rem]', children, ...props }: TableProps) {
+/**
+ * A data table that scrolls inside its own box instead of the page.
+ *
+ * The box is focusable: a read-only table holds nothing tabbable, so without
+ * `tabIndex` a keyboard could never reach the columns past the fold
+ * (WCAG 2.1.1).
+ */
+export function Table({
+  className,
+  wrapperClassName,
+  minWidthClassName = 'min-w-[40rem]',
+  label,
+  children,
+  ...props
+}: TableProps) {
   return (
-    <div className={cn('overflow-x-auto rounded-card border border-line bg-paper shadow-card', wrapperClassName)}>
+    <div
+      tabIndex={0}
+      role={label ? 'region' : undefined}
+      aria-label={label}
+      className={cn('overflow-x-auto rounded-card border border-line bg-paper shadow-card', wrapperClassName)}
+    >
       <table className={cn('w-full border-collapse text-sm text-ink', minWidthClassName, className)} {...props}>
         {children}
       </table>

@@ -51,9 +51,9 @@ export default async function TrackPage({ params, searchParams }: TrackPageProps
   const support = whatsappLink(settings.supportWhatsapp, t('help.message'));
 
   return (
-    <div className="mx-auto max-w-xl space-y-6 px-4 py-10 sm:px-6 sm:py-14">
+    <div className="mx-auto max-w-xl space-y-6 px-gutter py-10 sm:py-14">
       <header className="space-y-3">
-        <h1 className="font-display text-3xl font-bold tracking-tight text-ink sm:text-4xl">{t('title')}</h1>
+        <h1 className="font-display text-hero font-bold tracking-tight text-ink">{t('title')}</h1>
         <p className="text-[15px] leading-relaxed text-ink-soft">{t('lead')}</p>
       </header>
 
@@ -64,7 +64,7 @@ export default async function TrackPage({ params, searchParams }: TrackPageProps
       </Card>
 
       <Card tone="mist">
-        <CardTitle as="h2" className="text-base">
+        <CardTitle as="h2" size="sm">
           {t('help.title')}
         </CardTitle>
         <p className="mt-2 text-sm leading-relaxed text-ink-soft">{t('help.body')}</p>

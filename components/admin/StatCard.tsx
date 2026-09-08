@@ -25,17 +25,24 @@ export type StatCardProps = {
 /**
  * One figure, its label and what it counts. Amounts use the display font with
  * tabular numerals so a column of cards lines up.
+ *
+ * The card is denser on a phone, where these sit two per row, and the hint
+ * only appears from `sm` up: it explains a figure the operator is scanning,
+ * never one they act on, and four hints stacked are 200px of scrolling
+ * between them and the orders below.
  */
 export function StatCard({ label, value, hint, tone = 'neutral', href, className }: StatCardProps) {
   const body = (
     <>
-      <p className="text-sm font-medium text-ink-soft">{label}</p>
-      <p className={cn('mt-1 font-display text-2xl font-semibold tracking-tight tnum', VALUE_TONES[tone])}>{value}</p>
-      {hint ? <p className="mt-1 text-xs leading-snug text-ink-muted">{hint}</p> : null}
+      <p className="text-xs leading-snug font-medium text-ink-soft sm:text-sm">{label}</p>
+      <p className={cn('mt-1 font-display text-xl font-semibold tracking-tight tnum sm:text-2xl', VALUE_TONES[tone])}>
+        {value}
+      </p>
+      {hint ? <p className="mt-1 hidden text-xs leading-snug text-ink-muted sm:block">{hint}</p> : null}
     </>
   );
 
-  const shell = cn('rounded-card border border-line bg-paper p-4 shadow-card', className);
+  const shell = cn('rounded-card border border-line bg-paper p-3 shadow-card sm:p-4', className);
 
   return href ? (
     <Link href={href} className={cn(shell, 'block transition-colors hover:border-ink-muted')}>

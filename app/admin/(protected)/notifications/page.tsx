@@ -6,7 +6,7 @@ export const dynamic = 'force-dynamic';
 
 export const metadata: Metadata = { title: 'Notifications' };
 
-const LIMIT = 200;
+const LIMIT = 60;
 
 export default async function AdminNotificationsPage() {
   const rows = await listRecentNotifications(LIMIT);

@@ -11,6 +11,12 @@ import { METHOD_LABELS } from '@/components/ui/MethodBadge';
  * the gourde total — the largest thing on the page, because it is the number
  * the wallet will actually debit.
  *
+ * « Largest » used to be true only on a desk: the total was `text-3xl` with
+ * a `sm:text-4xl` that never fired on a phone, which put it level with the
+ * marketing headline above it. It now rides the fluid `text-total` token —
+ * 32px at 360, 56px on a wide screen — and outweighs everything at every
+ * width, as §11 asks.
+ *
  * The same component fills itself as the customer types on the home page and
  * shows the frozen receipt stored on an order, so the two can never look
  * different. Its labels live in the `home` namespace (`receipt.*`) whichever
@@ -34,9 +40,18 @@ export type QuoteReceiptProps = {
 
 function Row({ label, value, muted }: { label: ReactNode; value: ReactNode; muted?: boolean }) {
   return (
-    <div className="flex items-baseline justify-between gap-4 py-1">
-      <dt className={cn('text-sm', muted ? 'text-ink-soft' : 'text-ink')}>{label}</dt>
-      <dd className="font-display tnum text-sm font-medium text-ink">{value}</dd>
+    // `flex-wrap` + `min-w-0`: a gourde amount is unbreakable (no-break
+    // spaces), an operator-written fee name is not bounded — on 256px of
+    // usable width the label has to be allowed to take its own line rather
+    // than collide with the figure.
+    //
+    // `ml-auto` on the figure is what keeps that wrap readable: alone on the
+    // second line it would otherwise sit at the left, out of the column of
+    // amounts the eye is running down. On a single line `justify-between`
+    // has already parted the two, so the auto margin changes nothing there.
+    <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-0.5 py-1">
+      <dt className={cn('min-w-0 text-sm', muted ? 'text-ink-soft' : 'text-ink')}>{label}</dt>
+      <dd className="ml-auto font-display tnum text-sm font-medium text-ink">{value}</dd>
     </div>
   );
 }
@@ -70,14 +85,14 @@ export function QuoteReceipt({
         <p className="mt-3 text-sm leading-relaxed text-ink-soft">{emptyMessage ?? t('receipt.placeholder')}</p>
       ) : (
         <>
-          <div className="mt-4 flex items-baseline justify-between gap-3">
+          <div className="mt-3 flex flex-wrap items-baseline justify-between gap-x-3 gap-y-0.5">
             <span className="text-sm text-ink-soft">{t('receipt.youReceive')}</span>
             <span className="font-display tnum text-xl font-semibold text-ink">
               {formatUsd(quote.usdCents, locale)}
             </span>
           </div>
 
-          <dl className="mt-4 border-t border-line pt-3">
+          <dl className="mt-3 border-t border-line pt-2">
             <Row label={t('receipt.rate')} value={formatRate(quote.fxRateHtg, locale)} muted />
             <Row label={t('receipt.base')} value={formatHtg(quote.baseHtg)} muted />
             {quote.lines.map((line) => {
@@ -111,19 +126,23 @@ export function QuoteReceipt({
             })}
           </dl>
 
-          <div className="mt-3 border-t-2 border-dashed border-line pt-4">
+          <div className="mt-3 border-t-2 border-dashed border-line pt-3">
             <div className="flex flex-wrap items-end justify-between gap-x-4 gap-y-1">
               <span className="text-sm font-medium text-ink">{t('receipt.total')}</span>
-              <span className="font-display tnum text-3xl leading-none font-bold text-ink sm:text-4xl">
-                {formatHtg(quote.totalHtg)}
-              </span>
+              <span className="font-display tnum text-total font-bold text-ink">{formatHtg(quote.totalHtg)}</span>
             </div>
-            <p className="mt-2 text-sm text-ink-soft">
+            {/*
+              The all-in rate is the honest price and it used to be the
+              quietest line on the page — 14px of grey under a headline that
+              advertised the bare exchange rate. It carries the same weight as
+              the total's own label now.
+            */}
+            <p className="mt-2 text-[15px] font-medium tnum text-ink">
               {t('receipt.effective', { rate: formatRate(quote.effectiveRateHtg, locale) })}
             </p>
           </div>
 
-          {frozen ? <p className="mt-3 text-xs text-ink-muted">{t('receipt.frozen')}</p> : null}
+          {frozen ? <p className="mt-3 text-caption text-ink-muted">{t('receipt.frozen')}</p> : null}
         </>
       )}
     </section>

@@ -5,10 +5,14 @@ export type FieldProps = {
   /** Control id; the label points at it and the hint/error ids derive from it. */
   htmlFor: string;
   label: ReactNode;
+  /** Hides the label visually; the control keeps its accessible name. */
+  labelHidden?: boolean;
   /** Small text after the label, e.g. « facultatif ». */
   optional?: ReactNode;
   hint?: ReactNode;
   error?: ReactNode;
+  /** Extra content under the hint, e.g. a « Où le trouver ? » disclosure. */
+  footer?: ReactNode;
   className?: string;
   children: ReactNode;
 };
@@ -33,24 +37,40 @@ export function fieldDescribedBy(htmlFor: string, opts: { hint?: unknown; error?
 }
 
 /** Label, control, hint and error laid out consistently. */
-export function Field({ htmlFor, label, optional, hint, error, className, children }: FieldProps) {
+export function Field({
+  htmlFor,
+  label,
+  labelHidden = false,
+  optional,
+  hint,
+  error,
+  footer,
+  className,
+  children,
+}: FieldProps) {
   return (
     <div className={cn('flex flex-col gap-1.5', className)}>
-      <label htmlFor={htmlFor} className="text-sm font-medium text-ink">
+      <label htmlFor={htmlFor} className={cn('text-sm font-medium text-ink', labelHidden && 'sr-only')}>
         {label}
         {optional ? <span className="ml-1.5 font-normal text-ink-soft">{optional}</span> : null}
       </label>
       {children}
-      {error ? (
-        <p id={fieldErrorId(htmlFor)} className="text-sm text-coral" role="alert">
-          {error}
-        </p>
-      ) : null}
+      {/*
+        The hint is read first and the error sits closest to the control, where
+        the eye returns after a refusal. `aria-describedby` still announces the
+        error first — see fieldDescribedBy.
+      */}
       {hint ? (
-        <p id={fieldHintId(htmlFor)} className="text-sm text-ink-soft">
+        <p id={fieldHintId(htmlFor)} className="text-sm break-anywhere text-ink-soft">
           {hint}
         </p>
       ) : null}
+      {error ? (
+        <p id={fieldErrorId(htmlFor)} className="text-sm font-medium text-coral-deep" role="alert">
+          {error}
+        </p>
+      ) : null}
+      {footer}
     </div>
   );
 }

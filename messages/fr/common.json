@@ -5,9 +5,13 @@
   "nav": {
     "home": "Accueil",
     "track": "Suivre ma commande",
+    "trackShort": "Suivi",
     "faq": "Questions fréquentes",
+    "faqShort": "FAQ",
     "terms": "Conditions",
-    "support": "Support WhatsApp"
+    "support": "Support WhatsApp",
+    "primary": "Navigation principale",
+    "footer": "Liens du pied de page"
   },
   "account": {
     "signIn": "Se connecter",
@@ -24,7 +28,8 @@
     "feesVisible": "Les frais sont affichés avant de payer, sans surprise.",
     "verified": "Chaque paiement est vérifié directement auprès de MonCash ou NatCash.",
     "tracking": "Suivez votre commande à tout moment grâce à sa référence.",
-    "support": "Une vraie personne répond sur WhatsApp."
+    "support": "Une vraie personne répond sur WhatsApp.",
+    "short": "Frais affichés avant de payer · Paiement vérifié · Suivi par référence"
   },
   "sandbox": {
     "title": "Mode test",
@@ -42,7 +47,8 @@
     "failed": "Échouée",
     "expired": "Expirée",
     "cancelled": "Annulée",
-    "refunded": "Remboursée"
+    "refunded": "Remboursée",
+    "checking": "Vérification en cours"
   },
   "notFound": {
     "title": "Page introuvable",
@@ -56,6 +62,6 @@
   },
   "copy": "Copier",
   "copied": "Copié",
-  "currencyNote": "Les montants sont affichés en dollars américains ($ US) et en gourdes (HTG).",
+  "currencyNote": "Les montants sont affichés en dollars américains ($ US) et en gourdes (HTG).",
   "test": "TEST"
 }

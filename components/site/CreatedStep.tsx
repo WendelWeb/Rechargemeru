@@ -60,7 +60,13 @@ export function CreatedStep({
         <p className="text-sm text-ink-soft">{t('created.reference')}</p>
         <div className="mt-1 flex flex-wrap items-center gap-3">
           <p className="font-display tnum text-2xl font-bold tracking-wide text-ink sm:text-3xl">{reference}</p>
-          <CopyButton value={reference} label={copyLabel} copiedLabel={copiedLabel} />
+          <CopyButton
+            value={reference}
+            label={copyLabel}
+            copiedLabel={copiedLabel}
+            size="md"
+            className="w-full sm:w-auto"
+          />
         </div>
       </div>
 
@@ -77,7 +83,15 @@ export function CreatedStep({
           window.location.assign(redirectUrl);
         }}
       >
-        {t('created.pay', { total: formatHtg(totalHtg), method: methodLabel })}
+        {/* « Payer 3 360 HTG » on its own line and the rail underneath: the
+            total is the information, and at 360px a single 29-character line
+            had nowhere to go. */}
+        <span className="flex flex-col items-center leading-tight">
+          <span>{t('created.pay', { total: formatHtg(totalHtg) })}</span>
+          <span className="text-caption font-normal opacity-80">
+            {t('created.payWith', { method: methodLabel })}
+          </span>
+        </span>
       </Button>
 
       {expiresAt ? (

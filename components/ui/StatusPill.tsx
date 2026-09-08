@@ -34,10 +34,10 @@ const PILL: Record<StatusTone, string> = {
 
 const DOT: Record<StatusTone, string> = {
   waiting: 'bg-ink-muted',
-  action: 'bg-sun-deep',
+  action: 'bg-sun-ink',
   attention: 'bg-coral',
   good: 'bg-mint',
-  muted: 'bg-line',
+  muted: 'bg-ink-muted',
   neutral: 'bg-paper',
 };
 
@@ -49,12 +49,19 @@ export type StatusPillProps = {
   status: OrderStatus;
   /** Human label in the reader's language (the pill never translates itself). */
   label: string;
+  /**
+   * Overrides the tone derived from `status`. One caller needs it: while a
+   * payment is being verified the stored status is still `pending_payment`,
+   * and the pill must not say « rien reçu » in grey above a panel that says
+   * « nous vérifions votre paiement ».
+   */
+  tone?: StatusTone;
   size?: 'sm' | 'md';
   className?: string;
 };
 
-export function StatusPill({ status, label, size = 'md', className }: StatusPillProps) {
-  const tone = statusTone(status);
+export function StatusPill({ status, label, tone: toneOverride, size = 'md', className }: StatusPillProps) {
+  const tone = toneOverride ?? statusTone(status);
   return (
     <span
       className={cn(

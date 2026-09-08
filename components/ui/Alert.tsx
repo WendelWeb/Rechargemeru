@@ -7,8 +7,8 @@ export type AlertTone = 'info' | 'success' | 'warning' | 'danger';
 const STYLES: Record<AlertTone, { box: string; icon: string; Icon: typeof Info }> = {
   info: { box: 'bg-mist text-ink', icon: 'text-ink-soft', Icon: Info },
   success: { box: 'bg-mint-soft text-ink', icon: 'text-mint', Icon: CircleCheck },
-  warning: { box: 'bg-sun-soft text-ink', icon: 'text-sun-deep', Icon: TriangleAlert },
-  danger: { box: 'bg-coral-soft text-ink', icon: 'text-coral', Icon: CircleX },
+  warning: { box: 'bg-sun-soft text-ink', icon: 'text-sun-ink', Icon: TriangleAlert },
+  danger: { box: 'bg-coral-soft text-ink', icon: 'text-coral-deep', Icon: CircleX },
 };
 
 export type AlertProps = {

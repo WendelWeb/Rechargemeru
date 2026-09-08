@@ -24,9 +24,10 @@ export function SweepButton({ pending }: SweepButtonProps) {
   const [running, startTransition] = useTransition();
 
   return (
-    <div>
+    <div className="w-full sm:w-auto">
       <Button
         variant="ghost"
+        className="w-full sm:w-auto"
         disabled={pending === 0}
         loading={running}
         loadingLabel="Vérification en cours…"

@@ -44,14 +44,14 @@ function Row({ label, children }: { label: string; children: ReactNode }) {
   return (
     <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-0.5 border-b border-line py-2 last:border-0">
       <dt className="text-sm text-ink-soft">{label}</dt>
-      <dd className="min-w-0 text-right text-sm text-ink">{children}</dd>
+      <dd className="min-w-0 text-right text-sm break-words text-ink">{children}</dd>
     </div>
   );
 }
 
 function Panel({ title, children }: { title: string; children: ReactNode }) {
   return (
-    <section className="rounded-card border border-line bg-paper p-5 shadow-card sm:p-6">
+    <section className="rounded-card border border-line bg-paper p-4 shadow-card sm:p-6">
       <CardTitle as="h2" className="mb-3">
         {title}
       </CardTitle>
@@ -116,12 +116,24 @@ export default async function AdminOrderPage({ params }: PageParams) {
 
   return (
     <div className="space-y-6">
-      <header className="flex flex-wrap items-center gap-3">
-        <h1 className="font-display text-2xl font-semibold tracking-wide tnum text-ink">{order.reference}</h1>
-        <StatusPill status={order.status} label={statusLabelFr(order.status)} />
-        <MethodBadge method={order.method} size="sm" />
-        {order.mode === 'sandbox' ? <Chip tone="test">TEST</Chip> : null}
-        <CopyButton value={order.reference} label="Copier la référence" copiedLabel="Copié" className="ml-auto" />
+      {/*
+        The reference owns the first line, with the button that copies it
+        right beside it; what the order *is* comes underneath. Laid out as one
+        wrapping row, the copy button was pushed to a line of its own by
+        `ml-auto`, alone and right-aligned, away from the value it copies.
+      */}
+      <header className="space-y-2">
+        <div className="flex items-center gap-2">
+          <h1 className="min-w-0 font-display text-2xl leading-tight font-semibold tracking-wide break-all tnum text-ink">
+            {order.reference}
+          </h1>
+          <CopyButton value={order.reference} label="Copier la référence" copiedLabel="Copié" iconOnly className="shrink-0" />
+        </div>
+        <div className="flex flex-wrap items-center gap-2">
+          <StatusPill status={order.status} label={statusLabelFr(order.status)} />
+          <MethodBadge method={order.method} size="sm" />
+          {order.mode === 'sandbox' ? <Chip tone="test">TEST</Chip> : null}
+        </div>
       </header>
 
       {order.mode === 'sandbox' ? (
@@ -163,6 +175,16 @@ export default async function AdminOrderPage({ params }: PageParams) {
           whatsappHref={whatsappHref}
         />
       ) : null}
+
+      <OrderActions
+        orderId={order.id}
+        status={order.status}
+        meruAccountType={order.meruAccountType}
+        meruAccount={order.meruAccount}
+        adminNote={order.adminNote}
+        suggestedRefundHtg={order.paidHtg ?? order.totalHtg}
+        suggestedRefundWallet={payerWallet ?? order.customerPhone}
+      />
 
       <div className="grid gap-5 lg:grid-cols-2">
         <Panel title="Devis figé">
@@ -270,16 +292,6 @@ export default async function AdminOrderPage({ params }: PageParams) {
           </dl>
         </Panel>
       </div>
-
-      <OrderActions
-        orderId={order.id}
-        status={order.status}
-        meruAccountType={order.meruAccountType}
-        meruAccount={order.meruAccount}
-        adminNote={order.adminNote}
-        suggestedRefundHtg={order.paidHtg ?? order.totalHtg}
-        suggestedRefundWallet={payerWallet ?? order.customerPhone}
-      />
 
       <Panel title="Chronologie">
         <OrderTimeline events={events} />

@@ -7,7 +7,16 @@ import { cn } from '@/lib/cn';
 
 export type LocaleSwitcherProps = { className?: string };
 
-/** Français / Kreyòl toggle that keeps the visitor on the same page. */
+/**
+ * Français / Kreyòl toggle that keeps the visitor on the same page.
+ *
+ * It shows the two-letter code until `xl`: « Français » and « Kreyòl » are
+ * unbreakable words worth some 160px, and the header row has to seat a
+ * wordmark, a support button and the account links before them — at 360px
+ * there is nothing like the room, and between 640 and 1280 there is only just
+ * enough for one of the two. The full name stays as the accessible name, so
+ * nothing is lost to a screen reader.
+ */
 export function LocaleSwitcher({ className }: LocaleSwitcherProps) {
   const current = useLocale();
   const pathname = usePathname();
@@ -17,19 +26,26 @@ export function LocaleSwitcher({ className }: LocaleSwitcherProps) {
     <nav aria-label={t('switchLocale')} className={cn('inline-flex rounded-xl bg-mist p-0.5', className)}>
       {routing.locales.map((locale: AppLocale) => {
         const active = locale === current;
+        const name = t(`localeNames.${locale}`);
         return (
           <Link
             key={locale}
             href={pathname}
             locale={locale}
             hrefLang={locale}
+            aria-label={name}
             aria-current={active ? 'true' : undefined}
             className={cn(
-              'rounded-[10px] px-3 py-1.5 text-sm font-semibold transition-colors',
+              'inline-flex min-h-tap items-center justify-center rounded-[10px] px-3 text-sm font-semibold transition-colors',
               active ? 'bg-paper text-ink shadow-sm' : 'text-ink-soft hover:text-ink',
             )}
           >
-            {t(`localeNames.${locale}`)}
+            <span className="xl:hidden" aria-hidden="true">
+              {locale.toUpperCase()}
+            </span>
+            <span className="hidden xl:inline" aria-hidden="true">
+              {name}
+            </span>
           </Link>
         );
       })}

@@ -4,11 +4,24 @@ import { hasLocale } from 'next-intl';
 import { SignUp } from '@clerk/nextjs';
 import { Link } from '@/i18n/navigation';
 import { routing, type AppLocale } from '@/i18n/routing';
-import { clerkAppearance, clerkConfigured } from '@/lib/auth/clerk';
+import { clerkAppearance, clerkConfigured, type ClerkAppearance } from '@/lib/auth/clerk';
 import { Alert } from '@/components/ui/Alert';
 import { buttonClasses } from '@/components/ui/Button';
 
 export const dynamic = 'force-dynamic';
+
+/**
+ * Clerk's card, plus the one thing it gets wrong on a phone: its fields ship
+ * at 13px, and any control under 16px makes iOS zoom the page the moment it
+ * is focused — on the page that opens an account. `fontSize` is a documented
+ * theme *variable*, so this stays inside the rule `lib/auth/clerk.ts` sets
+ * for itself: never a Clerk class name, only variables, and a Clerk update
+ * can at worst revert it to their default.
+ */
+const mobileClerkAppearance: ClerkAppearance = {
+  ...clerkAppearance,
+  variables: { ...clerkAppearance?.variables, fontSize: '16px' },
+};
 
 /**
  * `/{locale}/inscription` — the sibling of `/connexion`, same frame.
@@ -71,20 +84,20 @@ export default async function SignUpPage({ params }: SignUpPageProps) {
   const copy = COPY[locale];
 
   return (
-    <div className="mx-auto w-full max-w-md px-4 py-10 sm:px-6 sm:py-14">
+    <div className="mx-auto w-full max-w-md px-gutter py-10 sm:py-14">
       <header className="space-y-2 text-center">
-        <h1 className="font-display text-3xl font-bold tracking-tight text-ink sm:text-4xl">{copy.title}</h1>
+        <h1 className="font-display text-hero font-bold tracking-tight text-ink">{copy.title}</h1>
         <p className="text-[15px] leading-relaxed text-ink-soft">{copy.lead}</p>
       </header>
 
       {clerkConfigured() ? (
-        <div className="mt-8 flex justify-center">
+        <div className="mt-8 flex min-w-0 justify-center [&>*]:min-w-0 [&>*]:max-w-full">
           <SignUp
             routing="path"
             path={`/${locale}/inscription`}
             signInUrl={`/${locale}/connexion`}
             fallbackRedirectUrl={`/${locale}/mes-commandes`}
-            appearance={clerkAppearance}
+            appearance={mobileClerkAppearance}
           />
         </div>
       ) : (
