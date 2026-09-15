@@ -295,6 +295,11 @@ export const bazikProvider: MoncashProvider = {
 
       const body = (await res.json().catch(() => null)) as unknown;
       if (!body) return { ok: false, message: 'bad_json' };
+      if (readBazikStatus(body) === 'unknown') {
+        const d = (body as BazikOrderBody | null)?.data ?? (body as NonNullable<BazikOrderBody>['data']);
+        const word = String(d?.status ?? d?.state ?? d?.message ?? '').slice(0, 40);
+        return { ok: false, message: `unknown_status:${word}` };
+      }
       return mapBazikOrder(body);
     } catch (e) {
       const message = e instanceof Error ? (e.name === 'AbortError' ? 'timeout' : e.message) : 'error';
@@ -339,12 +344,41 @@ type BazikOrderBody = {
  * next check, whereas an over-eager match would send dollars for nothing.
  */
 export function isBazikPaid(body: unknown): boolean {
+  return readBazikStatus(body) === 'paid';
+}
+
+/** Words Bazik is known to use for an order that has NOT been paid. */
+const BAZIK_OPEN_STATUSES = new Set([
+  'pending',
+  'processing',
+  'created',
+  'failed',
+  'error',
+  'canceled',
+  'cancelled',
+  'expired',
+  'refunded',
+]);
+
+/**
+ * Pure, and TRI-STATE for the same reason as the NatCash rail (see
+ * `readKobaraStatus`): the 2026-09-13 loss came from a binary answer that had
+ * to say "not paid" about a situation it did not understand.
+ *
+ * Bazik has only ever been observed returning `pending` here, so the success
+ * vocabulary below is still partly inferred. That is precisely why an
+ * unrecognised word must surface as `unknown` and reach a human, rather than
+ * quietly expiring an order somebody paid for.
+ */
+export function readBazikStatus(body: unknown): 'paid' | 'open' | 'unknown' {
   const b = body as BazikOrderBody | null;
   const d = b?.data ?? (b as NonNullable<BazikOrderBody>['data']);
-  if (!d || typeof d !== 'object') return false;
-  if (d.paid === true) return true;
+  if (!d || typeof d !== 'object') return 'unknown';
+  if (d.paid === true) return 'paid';
   const word = String(d.status ?? d.state ?? d.message ?? '').trim().toLowerCase();
-  return word === 'successful' || word === 'success' || word === 'completed' || word === 'paid';
+  if (!word) return 'unknown';
+  if (['successful', 'success', 'completed', 'paid'].includes(word)) return 'paid';
+  return BAZIK_OPEN_STATUSES.has(word) ? 'open' : 'unknown';
 }
 
 function mapBazikOrder(body: unknown): MoncashPayment {

@@ -208,6 +208,68 @@ const LIST_MAX_PAGES = 6;
  * means "not paid" — only a payment that Kobara returns with a non-success
  * status does.
  */
+/** One entry of the provider's own ledger, as the reconciliation reads it. */
+export type KobaraLedgerEntry = {
+  /** Kobara's payment id — what we store as `provider_ref`. */
+  paymentId: string | null;
+  /** `metadata.order_id` — OUR order id, as Kobara echoes it back. */
+  orderId: string | null;
+  status: 'paid' | 'open' | 'unknown';
+  rawStatus: string | null;
+  amountHtg: number | null;
+  transactionId: string | null;
+  /** When Kobara says the money moved, or null while it has not. */
+  paidAt: Date | null;
+  createdAt: Date | null;
+};
+
+function parseDate(value: unknown): Date | null {
+  if (typeof value !== 'string' || !value) return null;
+  const d = new Date(value);
+  return Number.isNaN(d.getTime()) ? null : d;
+}
+
+/**
+ * The merchant's recent payments, newest first — Kobara's own ledger.
+ *
+ * This is what makes the NatCash rail auditable rather than merely hopeful.
+ * Every other check starts from one of OUR orders and asks "was this paid?",
+ * so a wrong reference or a broken lookup makes a real payment invisible.
+ * This one starts from the provider's list of money actually received, which
+ * is exactly the view that was missing on 2026-09-13.
+ */
+export async function listKobaraPayments(limit = 100): Promise<KobaraLedgerEntry[] | GatewayFailure> {
+  const entries: KobaraLedgerEntry[] = [];
+  let offset = 0;
+
+  while (entries.length < limit) {
+    const pageSize = Math.min(LIST_PAGE_SIZE, limit - entries.length);
+    const res = await kobaraFetch(`/api/v1/payments?limit=${pageSize}&offset=${offset}`, { method: 'GET' });
+    if (!res.ok) return res;
+
+    const body = (res.body ?? null) as KobaraPage | null;
+    const rows = Array.isArray(body?.data) ? body.data : [];
+    for (const p of rows) {
+      entries.push({
+        paymentId: paymentId(p),
+        orderId: orderIdOf(p),
+        status: readKobaraStatus(p.status),
+        rawStatus: typeof p.status === 'string' ? p.status : null,
+        amountHtg: amountOf(p),
+        transactionId: transactionOf(p),
+        paidAt: parseDate((p as { paid_at?: unknown }).paid_at),
+        createdAt: parseDate((p as { created_at?: unknown }).created_at),
+      });
+    }
+
+    if (rows.length === 0 || body?.pagination?.has_more !== true) break;
+    const next = body.pagination?.next_offset;
+    offset = typeof next === 'number' && next > offset ? next : offset + pageSize;
+  }
+
+  return entries;
+}
+
 async function findKobaraPayment(
   providerRef: string,
 ): Promise<{ ok: true; payment: KobaraPayment } | GatewayFailure> {
@@ -297,6 +359,12 @@ export async function checkKobaraOrder(providerRef: string): Promise<KobaraCheck
   if (!found.ok) return found;
 
   const p = found.payment;
+  // A word we do not recognise is never reported as "not paid" — see
+  // `readKobaraStatus`. The caller gets a failure and the order waits for a
+  // human instead of being written off.
+  if (readKobaraStatus(p.status) === 'unknown') {
+    return { ok: false, message: `unknown_status:${String(p.status ?? '').slice(0, 40)}` };
+  }
   return {
     ok: true,
     paid: isKobaraPaid(p.status),
@@ -311,10 +379,38 @@ export async function checkKobaraOrder(providerRef: string): Promise<KobaraCheck
 
 /** Pure — only an explicit success counts. 'pending' is not a maybe-yes. */
 export function isKobaraPaid(status: unknown): boolean {
-  return (
-    typeof status === 'string' &&
-    ['succeeded', 'success', 'completed', 'paid'].includes(status.trim().toLowerCase())
-  );
+  return readKobaraStatus(status) === 'paid';
+}
+
+/** Statuses Kobara is known to use for a payment that has NOT succeeded. */
+const KOBARA_OPEN_STATUSES = new Set([
+  'pending',
+  'processing',
+  'requires_action',
+  'failed',
+  'canceled',
+  'cancelled',
+  'expired',
+  'refunded',
+  'disputed',
+]);
+
+/**
+ * Pure, and TRI-STATE on purpose — this is the shape of the 2026-09-13 loss.
+ *
+ * A binary "is it paid?" has to answer `false` for a word it does not know,
+ * and `false` means "the customer did not pay", which writes the order off
+ * and invites a second payment. So an unrecognised status is neither: it is
+ * `unknown`, the caller reports "could not verify", and a human looks. The
+ * cost of being wrong is asymmetric — an unnecessary review costs a minute,
+ * a wrongly-expired order costs a customer their money.
+ */
+export function readKobaraStatus(status: unknown): 'paid' | 'open' | 'unknown' {
+  if (typeof status !== 'string') return 'unknown';
+  const word = status.trim().toLowerCase();
+  if (!word) return 'unknown';
+  if (['succeeded', 'success', 'completed', 'paid'].includes(word)) return 'paid';
+  return KOBARA_OPEN_STATUSES.has(word) ? 'open' : 'unknown';
 }
 
 /* ----------------------------- webhook proof ------------------------------ */

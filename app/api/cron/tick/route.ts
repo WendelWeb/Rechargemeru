@@ -30,6 +30,7 @@ import { checkCronAuth, cronAuthStatus } from '@/lib/cron/auth';
 import { dbConfigured } from '@/lib/env';
 import { notifyOrder } from '@/lib/notifications/dispatch';
 import { expireStaleOrders, type ExpireResult } from '@/lib/orders/expire';
+import { sweepKobaraLedger, type LedgerTally } from '@/lib/orders/ledger';
 import { listAdminReminders } from '@/lib/orders/queries';
 import { reconcile, type ReconcileTally } from '@/lib/orders/reconcile';
 import { settleOrder } from '@/lib/orders/settle';
@@ -46,6 +47,9 @@ const RECONCILE_BUDGET_MS = 45_000;
 const RECONCILE_LIMIT = 30;
 /** How many stale orders one tick materialises as `expired`. */
 const EXPIRE_LIMIT = 25;
+/** How far back the provider ledger is trusted, and how deep it is read. */
+const LEDGER_MAX_AGE_MS = 7 * 24 * 60 * 60 * 1000;
+const LEDGER_LIMIT = 100;
 /** How many admin re-alerts one tick sends. */
 const REMINDER_LIMIT = 50;
 /** Past this, the remaining passes are left to the next tick rather than truncated. */
@@ -101,7 +105,23 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
 
   const reconciled: ReconcileTally = await reconcile({ now, budgetMs: RECONCILE_BUDGET_MS, limit: RECONCILE_LIMIT });
 
-  let expired: ExpireResult = { expired: 0, recovered: 0 };
+  // BEFORE expiry, always: this is the pass that reads the provider's own
+  // books, and the only one that can rescue an order our own references
+  // cannot find. Letting expiry run first would write off, one last time,
+  // exactly the payment this sweep exists to catch.
+  let ledger: LedgerTally = { examined: 0, settled: 0, agreed: 0, orphans: 0, failed: 0 };
+  if (Date.now() - startedAt < OVERALL_BUDGET_MS) {
+    ledger = await sweepKobaraLedger({
+      now,
+      maxAgeMs: LEDGER_MAX_AGE_MS,
+      limit: LEDGER_LIMIT,
+      settle: (id) => settleOrder(id, { actor: 'system', source: 'cron' }),
+    });
+  } else {
+    skipped.push('ledger');
+  }
+
+  let expired: ExpireResult = { expired: 0, recovered: 0, unverified: 0, escalated: 0 };
   if (Date.now() - startedAt < OVERALL_BUDGET_MS) {
     expired = await expireStaleOrders({
       now,
@@ -120,7 +140,7 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
   }
 
   return NextResponse.json(
-    { ok: true, ms: Date.now() - startedAt, reconciled, expired, reminders, skipped },
+    { ok: true, ms: Date.now() - startedAt, reconciled, ledger, expired, reminders, skipped },
     { headers: NO_STORE },
   );
 }
