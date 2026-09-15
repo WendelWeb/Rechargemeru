@@ -5,6 +5,7 @@ import { MethodBadge } from '@/components/ui/MethodBadge';
 import { StatusPill } from '@/components/ui/StatusPill';
 import { EmptyRow, Table, Tbody, Td, Th, Thead, Tr } from '@/components/ui/Table';
 import { OrderCard } from '@/components/admin/OrderCard';
+import type { WhatsAppMessage } from '@/lib/admin/whatsapp-messages';
 import { formatDateTime, formatHtg, formatUsdShort } from '@/lib/format';
 import { statusLabelFr } from '@/lib/orders/transitions';
 import type { OrderRow } from '@/lib/orders/types';
@@ -15,6 +16,12 @@ export type OrdersTableProps = {
   empty?: ReactNode;
   /** Hides the « Créée » column on narrow embeds (the dashboard lists). */
   compact?: boolean;
+  /**
+   * Les messages WhatsApp par identifiant de commande. Fournis, chaque carte
+   * gagne le bouton « écrire au client » — répondre est la suite la plus
+   * fréquente de la lecture d'une liste.
+   */
+  whatsappByOrder?: Record<string, WhatsAppMessage[]>;
 };
 
 /**
@@ -30,7 +37,12 @@ export type OrdersTableProps = {
  * the one thing that must never be missed while scanning a list, because
  * recharging one would send real dollars for a payment that never happened.
  */
-export function OrdersTable({ orders, empty = 'Aucune commande.', compact = false }: OrdersTableProps) {
+export function OrdersTable({
+  orders,
+  empty = 'Aucune commande.',
+  compact = false,
+  whatsappByOrder,
+}: OrdersTableProps) {
   const columns = compact ? 5 : 6;
   return (
     <>
@@ -42,7 +54,7 @@ export function OrdersTable({ orders, empty = 'Aucune commande.', compact = fals
         ) : (
           <ul className="space-y-3">
             {orders.map((order) => (
-              <OrderCard key={order.id} order={order} />
+              <OrderCard key={order.id} order={order} whatsappMessages={whatsappByOrder?.[order.id]} />
             ))}
           </ul>
         )}

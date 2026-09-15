@@ -7,7 +7,8 @@ import { formatDateTime } from '@/lib/format';
 import type { NotificationListItem } from '@/lib/admin/queries';
 import type { NotificationChannel, NotificationStatus, NotificationTemplate } from '@/lib/orders/types';
 
-const TEMPLATE_LABELS: Record<NotificationTemplate, string> = {
+/** Les huit étapes envoyées automatiquement. */
+const AUTOMATIC_LABELS: Record<NotificationTemplate, string> = {
   created: 'Commande créée',
   paid: 'Paiement reçu',
   fulfilled: 'Dollars envoyés',
@@ -16,6 +17,31 @@ const TEMPLATE_LABELS: Record<NotificationTemplate, string> = {
   needs_review: 'À vérifier',
   refunded: 'Remboursement',
   reminder_24h: 'Rappel 24 h',
+};
+
+/**
+ * Les intentions des messages WhatsApp écrits à la main. Elles ne sont pas des
+ * étapes de la commande, mais l'historique les garde telles quelles : savoir
+ * ce qui a réellement été dit à un client vaut mieux que de le ranger dans la
+ * case la plus proche. Le libellé brut s'affiche si une intention nouvelle
+ * arrive ici avant sa traduction.
+ */
+const TEMPLATE_LABELS: Record<string, string> = {
+  ...AUTOMATIC_LABELS,
+  payment_reminder: 'Rappel de paiement',
+  payment_help: 'Aide pour payer',
+  payment_proof: 'Preuve de paiement demandée',
+  expired_restart: 'Expirée, recommencer',
+  payment_received: 'Paiement reçu, envoi en cours',
+  confirm_meru_account: 'Confirmation du compte Meru',
+  delay_apology: 'Retard annoncé',
+  review_proof: 'Vérification en cours',
+  amount_mismatch: 'Montant différent',
+  ask_confirmation: 'Confirmation de réception demandée',
+  refund_announced: 'Remboursement annoncé',
+  refund_done: 'Remboursement effectué',
+  failed_explained: 'Échec expliqué',
+  free_text: 'Message libre',
 };
 
 const CHANNEL_LABELS: Record<NotificationChannel, string> = {

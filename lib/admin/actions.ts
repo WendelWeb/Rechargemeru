@@ -29,8 +29,8 @@ import { settleOrder, type SettleStatus } from '@/lib/orders/settle';
 import { statusLabelFr } from '@/lib/orders/transitions';
 import {
   MERU_ACCOUNT_TYPES,
-  NOTIFICATION_TEMPLATES,
   type MeruAccountType,
+  type NotificationLabel,
   type NotificationTemplate,
   type OrderRow,
   type OrderStatus,
@@ -401,13 +401,14 @@ export async function correctMeruAccountAction(
  * button, so the journal shows that the customer was told even when no
  * WhatsApp API is configured.
  */
-export async function recordManualWhatsAppAction(orderId: string, template: NotificationTemplate): Promise<ActionState> {
+export async function recordManualWhatsAppAction(orderId: string, template: NotificationLabel): Promise<ActionState> {
   await requireAdmin();
   try {
-    if (!NOTIFICATION_TEMPLATES.includes(template)) return { error: 'Modèle de message inconnu.' };
+    const label = String(template).trim().slice(0, 60);
+    if (!label) return { error: 'Modèle de message inconnu.' };
     const order = await getOrderById(orderId);
     if (!order) return { error: NOT_FOUND };
-    const row = await recordManualWhatsApp(orderId, order.customerPhone, template, order.locale);
+    const row = await recordManualWhatsApp(orderId, order.customerPhone, label, order.locale);
     revalidateOrder(orderId);
     return row
       ? { ok: true, message: 'Envoi WhatsApp manuel enregistré.' }

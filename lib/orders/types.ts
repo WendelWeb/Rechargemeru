@@ -75,6 +75,18 @@ export const NOTIFICATION_TEMPLATES = [
 ] as const;
 export type NotificationTemplate = (typeof NOTIFICATION_TEMPLATES)[number];
 
+/**
+ * Ce qui peut figurer dans `notifications.template`.
+ *
+ * Les envois AUTOMATIQUES n'utilisent que `NotificationTemplate`, les huit
+ * étapes de la vie d'une commande. Les envois MANUELS sur WhatsApp portent une
+ * intention plus fine (« demander la preuve de paiement », « faire confirmer
+ * le compte Meru »), et l'historique la garde telle quelle : savoir ce qui a
+ * réellement été dit à un client vaut mieux que de le ranger dans la case la
+ * plus proche. La colonne est du texte, la contrainte est ici.
+ */
+export type NotificationLabel = NotificationTemplate | (string & {});
+
 export const NOTIFICATION_AUDIENCES = ['admin', 'customer'] as const;
 export type NotificationAudience = (typeof NOTIFICATION_AUDIENCES)[number];
 

@@ -44,6 +44,7 @@ import type {
   NotificationRow,
   NotificationTemplate,
   OrderRow,
+  NotificationLabel,
 } from '@/lib/orders/types';
 import { getSettings } from '@/lib/settings/store';
 import type { Settings } from '@/lib/settings/types';
@@ -322,7 +323,7 @@ export async function notifyOrder(
 export async function recordManualWhatsApp(
   orderId: string,
   recipient: string,
-  template: NotificationTemplate,
+  template: NotificationLabel,
   locale: Locale = 'fr',
 ): Promise<NotificationRow | null> {
   if (!dbConfigured()) return null;

@@ -26,8 +26,8 @@ import {
   type Locale,
   type NotificationAudience,
   type NotificationChannel,
+  type NotificationLabel,
   type NotificationStatus,
-  type NotificationTemplate,
   type OrderStatus,
   type PaymentMethod,
 } from '@/lib/orders/types';
@@ -267,7 +267,7 @@ export type NotificationListItem = {
   channel: NotificationChannel;
   audience: NotificationAudience;
   recipient: string;
-  template: NotificationTemplate;
+  template: NotificationLabel;
   locale: Locale;
   status: NotificationStatus;
   providerId: string | null;

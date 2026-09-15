@@ -20,6 +20,7 @@ import type {
   NotificationAudience,
   NotificationChannel,
   NotificationStatus,
+  NotificationLabel,
   NotificationTemplate,
   OrderStatus,
   PaymentMethod,
@@ -193,7 +194,7 @@ export const notifications = pgTable(
     audience: text('audience').$type<NotificationAudience>().notNull(),
     // Email address or E.164 phone number.
     recipient: text('recipient').notNull(),
-    template: text('template').$type<NotificationTemplate>().notNull(),
+    template: text('template').$type<NotificationLabel>().notNull(),
     locale: text('locale').$type<Locale>().notNull().default('fr'),
     status: text('status').$type<NotificationStatus>().notNull().default('pending'),
     // Message id returned by Resend / Meta / Twilio.

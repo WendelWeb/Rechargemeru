@@ -4,6 +4,9 @@ import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { buttonClasses } from '@/components/ui/Button';
 import { OrderFilters } from '@/components/admin/OrderFilters';
 import { OrdersTable } from '@/components/admin/OrdersTable';
+import { buildWhatsAppMessages, type WhatsAppMessage } from '@/lib/admin/whatsapp-messages';
+import { getSettings } from '@/lib/settings/store';
+import { siteUrl } from '@/lib/site-url';
 import { orderFiltersToQuery, parseOrderFilters, toOrderFilters } from '@/lib/admin/queries';
 import { listOrders } from '@/lib/orders/queries';
 
@@ -15,7 +18,18 @@ type SearchParams = Promise<Record<string, string | string[] | undefined>>;
 
 export default async function AdminOrdersPage({ searchParams }: { searchParams: SearchParams }) {
   const filters = parseOrderFilters(await searchParams);
-  const { orders, total } = await listOrders(toOrderFilters(filters));
+  const [{ orders, total }, settings] = await Promise.all([
+    listOrders(toOrderFilters(filters)),
+    getSettings(),
+  ]);
+
+  // Écrire au client est la suite la plus fréquente de la lecture d'une liste.
+  const ctx = { siteUrl: siteUrl(), businessName: settings.businessName };
+  const whatsappByOrder: Record<string, WhatsAppMessage[]> = {};
+  for (const order of orders) {
+    const messages = buildWhatsAppMessages(order, ctx);
+    if (messages.length > 0) whatsappByOrder[order.id] = messages;
+  }
 
   const firstShown = total === 0 ? 0 : filters.offset + 1;
   const lastShown = filters.offset + orders.length;
@@ -37,7 +51,11 @@ export default async function AdminOrdersPage({ searchParams }: { searchParams: 
         {total === 0 ? 'Aucun résultat.' : `${firstShown}–${lastShown} sur ${total} commande(s).`}
       </p>
 
-      <OrdersTable orders={orders} empty="Aucune commande ne correspond à ces filtres." />
+      <OrdersTable
+        orders={orders}
+        empty="Aucune commande ne correspond à ces filtres."
+        whatsappByOrder={whatsappByOrder}
+      />
 
       {hasPrevious || hasNext ? (
         <nav aria-label="Pagination" className="flex items-center justify-between gap-3">

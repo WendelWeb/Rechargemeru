@@ -6,12 +6,16 @@ import { buttonClasses } from '@/components/ui/Button';
 import { CardTitle } from '@/components/ui/Card';
 import { OrderCard } from '@/components/admin/OrderCard';
 import { OrdersTable } from '@/components/admin/OrdersTable';
+import { buildWhatsAppMessages, type WhatsAppMessage } from '@/lib/admin/whatsapp-messages';
+import { siteUrl } from '@/lib/site-url';
 import { StatCard } from '@/components/admin/StatCard';
 import { SweepButton } from '@/components/admin/SweepButton';
 import { STALE_PENDING_MS, dashboardStats } from '@/lib/admin/queries';
 import { formatDateTime, formatHtg, formatUsdShort } from '@/lib/format';
 import { listActionable, listOrders, listReconcileCandidates } from '@/lib/orders/queries';
 import { RECONCILE_DEFAULTS } from '@/lib/orders/reconcile';
+import { getSettings } from '@/lib/settings/store';
+import type { OrderRow } from '@/lib/orders/types';
 
 export const dynamic = 'force-dynamic';
 
@@ -21,13 +25,32 @@ type SearchParams = Promise<Record<string, string | string[] | undefined>>;
 
 const DAY_MS = 24 * 3_600_000;
 
+/**
+ * Les messages WhatsApp de chaque commande d'une liste, indexés par
+ * identifiant. Construits ici, pas dans la carte : le catalogue a besoin des
+ * réglages (nom commercial, adresse publique) que seul le serveur lit.
+ */
+function whatsappFor(
+  orders: OrderRow[],
+  businessName: string,
+): Record<string, WhatsAppMessage[]> {
+  const ctx = { siteUrl: siteUrl(), businessName };
+  const out: Record<string, WhatsAppMessage[]> = {};
+  for (const order of orders) {
+    const messages = buildWhatsAppMessages(order, ctx);
+    if (messages.length > 0) out[order.id] = messages;
+  }
+  return out;
+}
+
 export default async function AdminDashboardPage({ searchParams }: { searchParams: SearchParams }) {
   const sp = await searchParams;
   const raw = Array.isArray(sp.tests) ? sp.tests[0] : sp.tests;
   const showTests = raw === '1';
   const now = new Date();
 
-  const [stats, actionable, stalePending, failedRecently, recent] = await Promise.all([
+  const [settings, stats, actionable, stalePending, failedRecently, recent] = await Promise.all([
+    getSettings(),
     dashboardStats(now),
     listActionable({ includeSandbox: showTests, limit: 20 }),
     listReconcileCandidates({
@@ -41,6 +64,11 @@ export default async function AdminDashboardPage({ searchParams }: { searchParam
     listOrders({ status: 'failed', mode: showTests ? 'all' : 'live', from: new Date(now.getTime() - DAY_MS), limit: 10 }),
     listOrders({ mode: showTests ? 'all' : 'live', limit: 8 }),
   ]);
+
+  const waActionable = whatsappFor(actionable, settings.businessName);
+  const waStale = whatsappFor(stalePending, settings.businessName);
+  const waFailed = whatsappFor(failedRecently.orders, settings.businessName);
+  const waRecent = whatsappFor(recent.orders, settings.businessName);
 
   return (
     <div className="space-y-8">
@@ -81,7 +109,12 @@ export default async function AdminDashboardPage({ searchParams }: { searchParam
         ) : (
           <ul className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
             {actionable.map((order) => (
-              <OrderCard key={order.id} order={order} cta="Recharger" />
+              <OrderCard
+                key={order.id}
+                order={order}
+                cta="Recharger"
+                whatsappMessages={waActionable[order.id]}
+              />
             ))}
           </ul>
         )}
@@ -195,14 +228,24 @@ export default async function AdminDashboardPage({ searchParams }: { searchParam
           </div>
           <SweepButton pending={stalePending.length} />
         </div>
-        <OrdersTable orders={stalePending} empty="Aucune commande en attente à re-vérifier." compact />
+        <OrdersTable
+          orders={stalePending}
+          empty="Aucune commande en attente à re-vérifier."
+          compact
+          whatsappByOrder={waStale}
+        />
       </section>
 
       <section aria-labelledby="failed-title">
         <CardTitle as="h2" className="mb-3">
           <span id="failed-title">Échouées ces vingt-quatre heures</span>
         </CardTitle>
-        <OrdersTable orders={failedRecently.orders} empty="Aucun échec récent." compact />
+        <OrdersTable
+          orders={failedRecently.orders}
+          empty="Aucun échec récent."
+          compact
+          whatsappByOrder={waFailed}
+        />
       </section>
 
       <section aria-labelledby="recent-title">
@@ -217,7 +260,11 @@ export default async function AdminDashboardPage({ searchParams }: { searchParam
             Toutes les commandes
           </Link>
         </div>
-        <OrdersTable orders={recent.orders} empty="Aucune commande pour l’instant." />
+        <OrdersTable
+          orders={recent.orders}
+          empty="Aucune commande pour l’instant."
+          whatsappByOrder={waRecent}
+        />
       </section>
     </div>
   );

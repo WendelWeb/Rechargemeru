@@ -14,7 +14,6 @@ import { OrderTimeline } from '@/components/admin/OrderTimeline';
 import { RawJson } from '@/components/admin/RawJson';
 import type { NotificationListItem } from '@/lib/admin/queries';
 import { formatDateTime, formatHtg, formatRate, formatUsd } from '@/lib/format';
-import { buildCustomerMessage } from '@/lib/notifications/templates';
 import { meruAccountLabelFr } from '@/lib/orders/meru-account';
 import { getOrderById, getOrderEvents, getOrderNotifications } from '@/lib/orders/queries';
 import { isExpired, statusLabelFr } from '@/lib/orders/transitions';
@@ -23,6 +22,8 @@ import { normalizePhone, formatPhone } from '@/lib/phone';
 import { effectiveRateHtg } from '@/lib/pricing/money';
 import { getSettings } from '@/lib/settings/store';
 import { siteUrl } from '@/lib/site-url';
+import { buildWhatsAppMessages } from '@/lib/admin/whatsapp-messages';
+import { WhatsAppMenu } from '@/components/admin/WhatsAppMenu';
 
 export const dynamic = 'force-dynamic';
 
@@ -97,18 +98,16 @@ export default async function AdminOrderPage({ params }: PageParams) {
   const actionable = order.status === 'paid' || order.status === 'needs_review';
   const showFulfilPanel = actionable || order.status === 'fulfilled';
 
-  // The message the operator would send by hand: exactly what the automatic
-  // WhatsApp would have said, so both channels tell the same story.
-  const waTemplate = order.status === 'fulfilled' ? 'fulfilled' : 'paid';
-  const waText = buildCustomerMessage(order, waTemplate, {
+  // Tous les messages que l'opérateur peut écrire à ce client, dans SA langue,
+  // les plus pertinents pour l'état de la commande en premier. Une commande de
+  // test n'en propose aucun (voir lib/admin/whatsapp-messages.ts).
+  const waMessages = buildWhatsAppMessages(order, {
     siteUrl: siteUrl(),
     businessName: settings.businessName,
-    supportWhatsapp: settings.supportWhatsapp,
-    slaFr: settings.fulfilmentSlaFr,
-    slaHt: settings.fulfilmentSlaHt,
-    supportHours: settings.supportHours,
-  }).text;
-  const whatsappHref = waLink(order.customerPhone, waText);
+  });
+  // Le raccourci du panneau de recharge reste le message de l'étape en cours.
+  const waShortcut = waMessages.find((m) => m.id === (order.status === 'fulfilled' ? 'fulfilled' : 'payment_received'));
+  const whatsappHref = waShortcut ? waLink(order.customerPhone, waShortcut.body) : null;
 
   const payerWallet = order.payerWallet ? normalizePhone(order.payerWallet) ?? order.payerWallet : null;
   const payerMismatch = payerWallet !== null && payerWallet !== order.customerPhone;
@@ -174,6 +173,23 @@ export default async function AdminOrderPage({ params }: PageParams) {
           fulfilledAt={order.fulfilledAt}
           whatsappHref={whatsappHref}
         />
+      ) : null}
+
+      {waMessages.length > 0 ? (
+        <Panel title="Écrire au client">
+          <p className="mb-3 text-sm text-ink-soft">
+            Le message s’ouvre dans WhatsApp sur votre téléphone, déjà rédigé en{' '}
+            {order.locale === 'ht' ? 'kreyòl' : 'français'}. Vous relisez avant d’envoyer, et l’envoi
+            est inscrit dans l’historique de la commande.
+          </p>
+          <WhatsAppMenu
+            orderId={order.id}
+            reference={order.reference}
+            customerName={order.customerName}
+            customerPhone={order.customerPhone}
+            messages={waMessages}
+          />
+        </Panel>
       ) : null}
 
       <OrderActions
