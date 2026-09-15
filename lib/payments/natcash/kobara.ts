@@ -10,20 +10,36 @@
  * HOW A PAYMENT GOES:
  *   1. POST /api/v1/payments with `provider: "natcash"` → a `checkout_url`.
  *   2. The customer confirms in NatCash and is returned to `success_url`.
- *   3. Kobara POSTs a SIGNED `payment.succeeded` webhook to `webhook_url`.
+ *   3. We read the payment back from Kobara's payment LIST (see below).
  *
- * WHERE THIS RAIL DIFFERS FROM MONCASH, AND WHY IT MATTERS: Digicel and Bazik
- * both expose "tell me about this order" endpoints, so the MonCash rule is
- * "never trust a callback, ask the provider". Kobara documents no such
- * endpoint. Its webhook is HMAC-SHA256-signed with a shared secret, which is
- * real cryptographic proof — and on this rail it is THE ONLY proof that leads
- * to `paid`. `checkKobaraOrder` below still TRIES a retrieve endpoint, because
- * one probably exists undocumented, but settlement treats its answer as a
- * hint that at best leads to `needs_review` unless every identifier matches
- * strictly (see `matchedOrderId` / `matchedPaymentId`). It is careful to
- * answer "I could not find out" rather than "not paid" when the endpoint is
- * missing: a false "unpaid" on a real payment is the one answer that costs a
- * customer their money.
+ * WHAT WENT WRONG ON 2026-09-13, AND WHY THIS FILE READS A LIST.
+ * Order MR-EKMQDW33 was really paid — Kobara has it as `succeeded`, 9 387 HTG,
+ * 21:56:42 — and this app expired it. Two assumptions were both false:
+ *
+ *   - THE WEBHOOK NEVER COMES. `webhook_url` is sent on every create and
+ *     Kobara stores it as `null`; no signed notification has ever reached this
+ *     app, nor the other app sharing the account. A rail whose only proof
+ *     never arrives cannot confirm anything.
+ *   - THERE IS NO RETRIEVE BY ID. `GET /api/v1/payments/{id}` answers with a
+ *     404 HTML page, which this module dutifully read as "cannot tell", so
+ *     settlement stayed pending until the cron expired the order.
+ *
+ * What DOES exist, verified against the live API: `GET /api/v1/payments`,
+ * paginated with `limit`/`offset`, returning every payment of the merchant
+ * with its true `status`, `amount`, `paid_at` and `metadata.order_id`. No
+ * filter is honoured (`?id=`, `?reference=` are ignored), so the lookup pages
+ * through recent payments and matches on `id`. That is now the rail's source
+ * of truth, and it is a sound one: settlement still refuses to reach `paid`
+ * on it unless every identifier matches strictly (`matchedOrderId` /
+ * `matchedPaymentId`, compared in lib/orders/settle.ts).
+ *
+ * The signature verification below stays: if the operator ever configures a
+ * webhook in the Kobara dashboard, that proof is stronger still and the
+ * endpoint is ready for it.
+ *
+ * Throughout, "I could not find out" must never be reported as "not paid": a
+ * false unpaid on a real payment is the one answer that costs a customer
+ * their money.
  */
 import { createHmac, timingSafeEqual } from 'node:crypto';
 import type {
@@ -158,6 +174,62 @@ function amountOf(p: KobaraPayment): number | null {
   return typeof p.amount === 'number' && p.amount > 0 ? Math.round(p.amount) : null;
 }
 
+/**
+ * The wallet's own transaction number, which support and reconciliation quote.
+ * Kobara puts it in `metadata.provider_transaction_id` (e.g. the NatCash
+ * `178933654959448362`); the flat fields are older shapes, kept as fallbacks.
+ */
+function transactionOf(p: KobaraPayment): string | null {
+  const fromMeta = p.metadata?.provider_transaction_id;
+  if (typeof fromMeta === 'string' && fromMeta.trim()) return fromMeta.trim();
+  return p.transaction_id ?? p.MonCash_transaction_id ?? p.kobara_reference ?? null;
+}
+
+/** One page of `GET /api/v1/payments`. */
+type KobaraPage = {
+  data?: KobaraPayment[];
+  pagination?: { has_more?: boolean; next_offset?: number };
+};
+
+/** Payments per request, and how far back to look before giving up. */
+const LIST_PAGE_SIZE = 50;
+const LIST_MAX_PAGES = 6;
+
+/**
+ * Finds one payment in Kobara's list. No query filter is honoured, so this
+ * pages from the newest until it matches `providerRef`, then stops.
+ *
+ * Bounded on purpose: this runs inside a customer's own return request and
+ * inside the reconciliation cron. Three hundred payments back is far more
+ * than any order still open, and an unbounded walk would be a way to hang
+ * the page a buyer is waiting on.
+ *
+ * `not_found` is a distinct answer from a transport failure, and neither
+ * means "not paid" — only a payment that Kobara returns with a non-success
+ * status does.
+ */
+async function findKobaraPayment(
+  providerRef: string,
+): Promise<{ ok: true; payment: KobaraPayment } | GatewayFailure> {
+  let offset = 0;
+  for (let page = 0; page < LIST_MAX_PAGES; page += 1) {
+    const res = await kobaraFetch(`/api/v1/payments?limit=${LIST_PAGE_SIZE}&offset=${offset}`, {
+      method: 'GET',
+    });
+    if (!res.ok) return res;
+
+    const body = (res.body ?? null) as KobaraPage | null;
+    const rows = Array.isArray(body?.data) ? body.data : [];
+    const hit = rows.find((p) => p.id === providerRef || p.kobara_reference === providerRef);
+    if (hit) return { ok: true, payment: hit };
+
+    if (rows.length === 0 || body?.pagination?.has_more !== true) break;
+    const next = body.pagination?.next_offset;
+    offset = typeof next === 'number' && next > offset ? next : offset + LIST_PAGE_SIZE;
+  }
+  return { ok: false, message: 'not_found' };
+}
+
 export async function createKobaraOrder(
   input: GatewayCreateInput,
 ): Promise<GatewayOrder | GatewayFailure> {
@@ -212,33 +284,26 @@ export type KobaraCheck = GatewayPayment & {
 };
 
 /**
- * Asks Kobara about an order.
+ * Asks Kobara about an order, through the payment list — the only read this
+ * gateway actually serves (see the file header for how that was established).
  *
- * NO RETRIEVE ENDPOINT IS DOCUMENTED. This tries the conventional REST path
- * anyway — gateways almost always have one — and treats "that route doesn't
- * exist" (404/405/501) as `unsupported_by_provider`, NOT as "not paid".
- *
- * That distinction is the whole point. Callers use `paid: false` to mean "the
- * customer did not pay", which sends them back to pay again. Reporting that
- * because an endpoint is missing would take money from someone who already
- * paid. On this rail the authority is the signed webhook.
+ * `paid: false` means Kobara returned the payment and it is not a success.
+ * Everything else is a failure message, never a false "unpaid": callers turn
+ * `paid: false` into "go and pay", which would charge twice somebody who has
+ * already paid.
  */
 export async function checkKobaraOrder(providerRef: string): Promise<KobaraCheck | GatewayFailure> {
-  const res = await kobaraFetch(`/api/v1/payments/${encodeURIComponent(providerRef)}`, { method: 'GET' });
-  if (!res.ok) {
-    if (/^HTTP (404|405|501)/.test(res.message)) {
-      return { ok: false, message: 'unsupported_by_provider' };
-    }
-    return res;
-  }
-  const p = unwrap(res.body);
+  const found = await findKobaraPayment(providerRef);
+  if (!found.ok) return found;
+
+  const p = found.payment;
   return {
     ok: true,
     paid: isKobaraPaid(p.status),
-    transactionId: p.transaction_id ?? p.MonCash_transaction_id ?? p.kobara_reference ?? null,
+    transactionId: transactionOf(p),
     amountHtg: amountOf(p),
     payer: null,
-    raw: res.body,
+    raw: p,
     matchedOrderId: orderIdOf(p),
     matchedPaymentId: paymentId(p),
   };

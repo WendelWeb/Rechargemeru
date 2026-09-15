@@ -17,6 +17,12 @@ export type SiteNavEntry = {
   label: string;
   /** Shown below `sm`, where « Suivre ma commande » does not fit. */
   short?: string;
+  /**
+   * `false` for a destination outside the `/fr` · `/ht` segment — the admin.
+   * The locale-aware `Link` would otherwise turn `/admin` into `/fr/admin`,
+   * which does not exist.
+   */
+  localized?: boolean;
 };
 
 export type SiteNavProps = {

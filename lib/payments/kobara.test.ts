@@ -1,13 +1,15 @@
 /**
- * The NatCash rail reaches `paid` on the strength of a signed webhook and
- * nothing else — Kobara documents no endpoint to re-ask about a payment.
- * That makes `verifyKobaraSignature` the single lock on the door: anyone who
- * could get past it could make the operator send real dollars.
+ * The NatCash rail is read back from Kobara's payment LIST — the only read
+ * that gateway serves. `verifyKobaraSignature` stays pinned because a signed
+ * webhook, if the operator ever configures one, is stronger proof still, and
+ * anyone who got past it could make the operator send real dollars.
  *
- * `checkKobaraOrder` is pinned alongside it because the expensive mistake on
- * this rail is symmetrical — treating "I could not find out" as "paid" sends
- * dollars for nothing; treating it as "not paid" sends a customer who was
- * already debited back to pay a second time.
+ * `checkKobaraOrder` is pinned hardest of all, because this is where the
+ * 2026-09-13 incident happened: `GET /api/v1/payments/{id}` does not exist,
+ * the 404 read as "cannot tell", and a really-paid order (MR-EKMQDW33,
+ * 9 387 HTG) expired. The mistake is symmetrical — treating "I could not find
+ * out" as "paid" sends dollars for nothing; treating it as "not paid" sends a
+ * customer who was already debited back to pay a second time.
  */
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { createHmac } from 'node:crypto';
@@ -292,65 +294,101 @@ describe('checkKobaraOrder', () => {
     process.env.KOBARA_SECRET_KEY = 'kbr_sk_test_abc';
   });
 
-  it('returns the raw body plus the ids settle needs for the strict match', async () => {
+  /** One page of the list endpoint, in the shape the live API returns. */
+  const page = (rows: unknown[], hasMore = false, nextOffset?: number) =>
+    json({ data: rows, pagination: { has_more: hasMore, next_offset: nextOffset } });
+
+  const paid = {
+    id: 'pay_9',
+    kobara_reference: 'KBR-9',
+    status: 'succeeded',
+    amount: 2985,
+    metadata: { order_id: 'order-1', provider_transaction_id: '178933654959448362' },
+  };
+
+  it('reads the payment out of the list, with the ids settle compares', async () => {
     const urls: string[] = [];
-    const payload = {
-      data: {
-        id: 'pay_9',
-        kobara_reference: 'KBR-9',
-        status: 'succeeded',
-        amount: 2985,
-        transaction_id: 'NC-123',
-        metadata: { order_id: 'order-1' },
-      },
-    };
     vi.spyOn(globalThis, 'fetch').mockImplementation(async (url) => {
       urls.push(String(url));
-      return json(payload);
+      return page([{ id: 'autre' }, paid]);
     });
+
     const r = await checkKobaraOrder('pay_9');
-    expect(urls[0]).toBe('https://api.kobara.app/api/v1/payments/pay_9');
+
+    expect(urls[0]).toBe('https://api.kobara.app/api/v1/payments?limit=50&offset=0');
     expect(r.ok).toBe(true);
     if (r.ok) {
       expect(r.paid).toBe(true);
       expect(r.amountHtg).toBe(2985);
-      expect(r.transactionId).toBe('NC-123');
+      // The wallet's own number, which support quotes — not Kobara's.
+      expect(r.transactionId).toBe('178933654959448362');
       expect(r.matchedOrderId).toBe('order-1');
       expect(r.matchedPaymentId).toBe('pay_9');
       expect(r.payer).toBeNull();
-      expect(r.raw).toEqual(payload);
+      expect(r.raw).toEqual(paid);
     }
   });
 
-  it('reports null ids when the payload does not carry them — never a guess', async () => {
-    vi.spyOn(globalThis, 'fetch').mockResolvedValue(json({ status: 'pending', amount: 0 }));
+  it('pages until it finds the payment, following next_offset', async () => {
+    const urls: string[] = [];
+    vi.spyOn(globalThis, 'fetch').mockImplementation(async (url) => {
+      urls.push(String(url));
+      return urls.length === 1 ? page([{ id: 'vieux' }], true, 50) : page([paid]);
+    });
+
+    const r = await checkKobaraOrder('pay_9');
+
+    expect(urls).toEqual([
+      'https://api.kobara.app/api/v1/payments?limit=50&offset=0',
+      'https://api.kobara.app/api/v1/payments?limit=50&offset=50',
+    ]);
+    expect(r.ok && r.paid).toBe(true);
+  });
+
+  /**
+   * THE REGRESSION. An order Kobara has never heard of must answer
+   * `not_found`, which settlement reads as "could not verify". If this ever
+   * returns `{ ok: true, paid: false }`, a paid customer is told to pay again.
+   */
+  it('answers not_found — never "unpaid" — when the payment is not in the list', async () => {
+    vi.spyOn(globalThis, 'fetch').mockResolvedValue(page([{ id: 'quelqu-un-dautre' }]));
+    await expect(checkKobaraOrder('pay_9')).resolves.toEqual({ ok: false, message: 'not_found' });
+  });
+
+  it('stops walking after a bounded number of pages', async () => {
+    let calls = 0;
+    vi.spyOn(globalThis, 'fetch').mockImplementation(async () => {
+      calls += 1;
+      return page([{ id: 'jamais-le-bon' }], true, calls * 50);
+    });
+    await expect(checkKobaraOrder('pay_9')).resolves.toEqual({ ok: false, message: 'not_found' });
+    expect(calls).toBe(6);
+  });
+
+  it('reports a payment Kobara still holds as pending, without guessing', async () => {
+    vi.spyOn(globalThis, 'fetch').mockResolvedValue(
+      page([{ id: 'pay_9', status: 'pending', amount: 0 }]),
+    );
     const r = await checkKobaraOrder('pay_9');
     expect(r.ok).toBe(true);
     if (r.ok) {
       expect(r.paid).toBe(false);
       expect(r.amountHtg).toBeNull();
       expect(r.matchedOrderId).toBeNull();
-      expect(r.matchedPaymentId).toBeNull();
+      expect(r.matchedPaymentId).toBe('pay_9');
       expect(r.transactionId).toBeNull();
     }
   });
 
-  it('falls back to kobara_reference for the payment id', async () => {
+  it('matches on kobara_reference too, and uses it as the payment id', async () => {
     vi.spyOn(globalThis, 'fetch').mockResolvedValue(
-      json({ kobara_reference: 'KBR-9', status: 'succeeded', amount: 10 }),
+      page([{ kobara_reference: 'KBR-9', status: 'succeeded', amount: 10 }]),
     );
     const r = await checkKobaraOrder('KBR-9');
     expect(r.ok && r.matchedPaymentId).toBe('KBR-9');
   });
 
-  it('answers unsupported_by_provider — not "unpaid" — when the endpoint does not exist', async () => {
-    for (const status of [404, 405, 501]) {
-      vi.spyOn(globalThis, 'fetch').mockResolvedValueOnce(new Response('', { status }));
-      await expect(checkKobaraOrder('pay_9')).resolves.toEqual({ ok: false, message: 'unsupported_by_provider' });
-    }
-  });
-
-  it('passes other failures through as messages', async () => {
+  it('passes transport failures through as messages', async () => {
     vi.spyOn(globalThis, 'fetch').mockResolvedValueOnce(json({ message: 'boom' }, 500));
     await expect(checkKobaraOrder('pay_9')).resolves.toEqual({ ok: false, message: 'HTTP 500 boom' });
     vi.spyOn(globalThis, 'fetch').mockRejectedValueOnce(new TypeError('fetch failed'));
@@ -382,7 +420,10 @@ describe('natcash facade', () => {
   it('propagates the strict-match ids through retrieveNatcashOrder', async () => {
     process.env.KOBARA_SECRET_KEY = 'kbr_sk_test_abc';
     vi.spyOn(globalThis, 'fetch').mockResolvedValue(
-      json({ id: 'pay_9', status: 'succeeded', amount: 2985, metadata: { order_id: 'order-1' } }),
+      json({
+        data: [{ id: 'pay_9', status: 'succeeded', amount: 2985, metadata: { order_id: 'order-1' } }],
+        pagination: { has_more: false },
+      }),
     );
     const r = await retrieveNatcashOrder('pay_9');
     expect(r.ok).toBe(true);
