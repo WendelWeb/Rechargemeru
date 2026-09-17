@@ -40,6 +40,7 @@ export const WHATSAPP_MESSAGE_IDS = [
   'payment_received',
   'confirm_meru_account',
   'delay_apology',
+  'meru_blocked_retry',
   'review_proof',
   'amount_mismatch',
   'fulfilled',
@@ -259,6 +260,49 @@ const CATALOGUE: readonly Draft[] = [
       `Peman ${v.htgRecu} ou a byen rive pou kòmand ${v.reference}. ` +
       `Voye ${v.usd} yo ap pran yon ti tan anplis pase abitid. ` +
       `M pa bliye w, m ap ekri w kou sa fèt.`,
+  },
+  {
+    id: 'meru_blocked_retry',
+    label: 'Envoi refusé par Meru, nouvelle tentative',
+    hint: 'Meru bloque l’envoi — compte trop récent, plafond, vérification en cours.',
+    tone: 'caution',
+    recommendedFor: [],
+    availableFor: ['paid', 'needs_review'],
+    fr: (v) =>
+      `Bonjour ${v.prenom}, ici ${v.business}.
+
+` +
+      `J'ai bien reçu votre paiement de ${v.htgRecu} et j'ai tenté l'envoi de ${v.usd} ` +
+      `sur votre compte Meru ${v.meru}.
+
+` +
+      `Meru a refusé le transfert : votre compte vient d'être ouvert, et les comptes récents ` +
+      `sont limités pendant les premières heures. Cela ne vient pas de vous, et votre argent ` +
+      `est en sécurité chez moi.
+
+` +
+      `Je réessaie dans 24 heures et je vous écris dès que c'est passé. ` +
+      `Si vous préférez être remboursé, dites-le moi : je vous renvoie ${v.htgRecu} sur votre ${v.methode}.
+
+` +
+      `Commande ${v.reference} · suivi : ${v.suivi}`,
+    ht: (v) =>
+      `Bonjou ${v.prenom}, se ${v.business}.
+
+` +
+      `Mwen byen resevwa peman ${v.htgRecu} ou a epi m te eseye voye ${v.usd} ` +
+      `sou kont Meru ou ${v.meru}.
+
+` +
+      `Meru refize voye a : kont ou fenk louvri, epi kont ki fèk kreye yo gen yon limit ` +
+      `nan premye èdtan yo. Se pa fòt ou, epi lajan w an sekirite lakay mwen.
+
+` +
+      `M ap reeseye nan 24 èdtan epi m ap ekri w kou li pase. ` +
+      `Si w prefere yo ranbouse w, di m: m ap voye ${v.htgRecu} tounen sou ${v.methode} ou a.
+
+` +
+      `Kòmand ${v.reference} · swivi : ${v.suivi}`,
   },
   {
     id: 'review_proof',
