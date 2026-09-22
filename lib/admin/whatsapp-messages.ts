@@ -42,6 +42,7 @@ export const WHATSAPP_MESSAGE_IDS = [
   'delay_apology',
   'meru_blocked_retry',
   'closed_hours',
+  'delay_bonus',
   'review_proof',
   'amount_mismatch',
   'fulfilled',
@@ -337,6 +338,28 @@ const CATALOGUE: readonly Draft[] = [
       `${v.usd} yo voye sou kont Meru ou. Lajan w an sekirite.
 
 ` +
+      `Swiv kòmand lan : ${v.suivi}`,
+  },
+  {
+    id: 'delay_bonus',
+    label: 'Excuses pour le retard, avec un bonus',
+    hint: 'La recharge a pris du retard : s’excuser et annoncer le petit bonus ajouté.',
+    tone: 'primary',
+    recommendedFor: [],
+    availableFor: ['paid', 'needs_review', 'fulfilled'],
+    fr: (v) =>
+      `Bonjour ${v.prenom}, ici ${v.business}.\n\n` +
+      `Toutes nos excuses pour le retard sur votre commande ${v.reference}. ` +
+      `Ce n'est pas le service que nous voulons vous offrir.\n\n` +
+      `Pour nous faire pardonner, nous avons ajouté un petit bonus à votre recharge sur votre compte Meru ${v.meru}. ` +
+      `Merci pour votre patience et votre confiance.\n\n` +
+      `Suivre la commande : ${v.suivi}`,
+    ht: (v) =>
+      `Bonjou ${v.prenom}, se ${v.business}.\n\n` +
+      `Nou mande w eskiz pou reta sou kòmand ou ${v.reference}. ` +
+      `Se pa sèvis sa a nou vle ba ou.\n\n` +
+      `Pou n padone nou, nou ajoute yon ti bonis sou rechaj ou sou kont Meru ou ${v.meru}. ` +
+      `Mèsi pou pasyans ou ak konfyans ou.\n\n` +
       `Swiv kòmand lan : ${v.suivi}`,
   },
   {
