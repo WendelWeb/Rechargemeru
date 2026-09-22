@@ -36,6 +36,7 @@ const TEMPLATE_LABELS: Record<string, string> = {
   confirm_meru_account: 'Confirmation du compte Meru',
   delay_apology: 'Retard annoncé',
   meru_blocked_retry: 'Envoi refusé par Meru',
+  closed_hours: 'Hors des heures d’ouverture',
   review_proof: 'Vérification en cours',
   amount_mismatch: 'Montant différent',
   ask_confirmation: 'Confirmation de réception demandée',

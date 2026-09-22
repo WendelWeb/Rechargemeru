@@ -131,6 +131,17 @@ describe('buildWhatsAppMessages', () => {
     expect(m?.body).not.toContain('/commande/MR-EKMQDW33');
   });
 
+  it('termine chaque message par la mention « message automatique », dans la langue du client', () => {
+    for (const status of ORDER_STATUSES) {
+      for (const m of buildWhatsAppMessages(order({ status, locale: 'fr' }), CTX)) {
+        expect(m.body, m.id).toMatch(/— Ceci est un message automatique de Recharge Meru\.$/);
+      }
+      for (const m of buildWhatsAppMessages(order({ status, locale: 'ht' }), CTX)) {
+        expect(m.body, m.id).toMatch(/— Sa a se yon mesaj otomatik Recharge Meru\.$/);
+      }
+    }
+  });
+
   it('couvre tout le catalogue déclaré, sans identifiant orphelin', () => {
     const seen = new Set(ORDER_STATUSES.flatMap((status) => ids(order({ status }))));
     expect([...seen].sort()).toEqual([...WHATSAPP_MESSAGE_IDS].sort());

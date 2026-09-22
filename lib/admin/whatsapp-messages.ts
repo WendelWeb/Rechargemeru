@@ -41,6 +41,7 @@ export const WHATSAPP_MESSAGE_IDS = [
   'confirm_meru_account',
   'delay_apology',
   'meru_blocked_retry',
+  'closed_hours',
   'review_proof',
   'amount_mismatch',
   'fulfilled',
@@ -305,6 +306,40 @@ const CATALOGUE: readonly Draft[] = [
       `Kòmand ${v.reference} · swivi : ${v.suivi}`,
   },
   {
+    id: 'closed_hours',
+    label: 'Hors des heures d’ouverture',
+    hint: 'Commande arrivée la nuit : elle sera traitée demain entre 9 h et 21 h.',
+    tone: 'neutral',
+    recommendedFor: [],
+    availableFor: ['pending_payment', 'paid', 'needs_review'],
+    fr: (v) =>
+      `Bonjour ${v.prenom}, ici ${v.business}.
+
+` +
+      `Merci pour votre commande ${v.reference}. Nous sommes actuellement fermés : ` +
+      `nos heures d'ouverture sont de 9 h à 21 h.
+
+` +
+      `Votre commande sera traitée dès demain à partir de 9 h, et je vous écris dès que ` +
+      `${v.usd} sont envoyés sur votre compte Meru. Votre argent est en sécurité.
+
+` +
+      `Suivre la commande : ${v.suivi}`,
+    ht: (v) =>
+      `Bonjou ${v.prenom}, se ${v.business}.
+
+` +
+      `Mèsi pou kòmand ou ${v.reference}. Nou fèmen kounye a : ` +
+      `nou louvri de 9è dimaten rive 9è diswa.
+
+` +
+      `N ap trete kòmand ou a demen apati 9è dimaten, epi m ap ekri w kou ` +
+      `${v.usd} yo voye sou kont Meru ou. Lajan w an sekirite.
+
+` +
+      `Swiv kòmand lan : ${v.suivi}`,
+  },
+  {
     id: 'review_proof',
     label: 'Vérification en cours',
     hint: 'Le paiement demande un contrôle manuel.',
@@ -439,6 +474,19 @@ const CATALOGUE: readonly Draft[] = [
 ];
 
 /**
+ * La mention ajoutée à la fin de chaque message, dans la langue du client.
+ * Demandée par l'opérateur. Pour le message libre, une ligne vide de plus
+ * laisse la place d'écrire avant la mention.
+ */
+const PARAGRAPH = String.fromCharCode(10, 10);
+
+export function automaticFooter(locale: Locale, businessName: string): string {
+  return locale === 'ht'
+    ? `— Sa a se yon mesaj otomatik ${businessName}.`
+    : `— Ceci est un message automatique de ${businessName}.`;
+}
+
+/**
  * Les messages proposés pour une commande, les conseillés d'abord.
  *
  * Une commande en mode bac à sable n'en reçoit aucun : il n'y a pas de vrai
@@ -463,7 +511,12 @@ export function buildWhatsAppMessages(order: OrderRow, ctx: WhatsAppMessageConte
       id: d.id,
       label: d.label,
       hint: d.hint,
-      body: (locale === 'ht' ? d.ht : d.fr)(v),
+      body: [
+        (locale === 'ht' ? d.ht : d.fr)(v).trimEnd(),
+        // Le message libre garde une ligne vide pour écrire avant la mention.
+        ...(d.id === 'free_text' ? [''] : []),
+        automaticFooter(locale, ctx.businessName),
+      ].join(PARAGRAPH),
       recommended: d.recommendedFor.includes(order.status),
       tone: d.tone,
     }))
