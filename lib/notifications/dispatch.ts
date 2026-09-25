@@ -316,9 +316,14 @@ export async function notifyOrder(
 
 /**
  * Records that the operator sent a WhatsApp message by hand (the prefilled
- * `wa.me` button on the order page). One `sent` row on the `whatsapp_manual`
- * channel; a second click on the same template is deduplicated by the same
- * index and returns `null`. Never throws.
+ * `wa.me` links of the message window). One `sent` row on the
+ * `whatsapp_manual` channel.
+ *
+ * Sending the same message again — the « qu'est-ce qui s'est passé ? » of the
+ * next day — is a real second message, so it is recorded too: the dedupe
+ * index refuses a twin, and the send is then filed as a re-send of the first
+ * (`resendOf`), which the index lets through. The follow-up page reads the
+ * latest one. Never throws.
  */
 export async function recordManualWhatsApp(
   orderId: string,
@@ -328,11 +333,34 @@ export async function recordManualWhatsApp(
 ): Promise<NotificationRow | null> {
   if (!dbConfigured()) return null;
   try {
-    const [row] = await db
-      .insert(schema.notifications)
-      .values({ orderId, channel: 'whatsapp_manual', audience: 'customer', recipient, template, locale, status: 'sent' })
-      .onConflictDoNothing()
-      .returning();
+    const values = {
+      orderId,
+      channel: 'whatsapp_manual' as const,
+      audience: 'customer' as const,
+      recipient,
+      template,
+      locale,
+      status: 'sent' as const,
+    };
+    let [row] = await db.insert(schema.notifications).values(values).onConflictDoNothing().returning();
+    if (!row) {
+      const n = schema.notifications;
+      const [first] = await db
+        .select({ id: n.id })
+        .from(n)
+        .where(
+          and(
+            eq(n.orderId, orderId),
+            eq(n.channel, 'whatsapp_manual'),
+            eq(n.template, template),
+            eq(n.recipient, recipient),
+          ),
+        )
+        .orderBy(n.createdAt)
+        .limit(1);
+      if (!first) return null;
+      [row] = await db.insert(schema.notifications).values({ ...values, resendOf: first.id }).returning();
+    }
     if (!row) return null;
     await appendEvent({
       orderId,

@@ -4,6 +4,7 @@ import { useEffect, useMemo, useRef, useState, type ReactNode, type RefObject } 
 import { Check, ChevronDown, ChevronLeft } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { Link } from '@/i18n/navigation';
+import { track } from '@/lib/analytics/client';
 import { cn } from '@/lib/cn';
 import { formatHtg, formatRate, formatUsdShort, type FormatLocale } from '@/lib/format';
 import { formatPhone, normalizePhone } from '@/lib/phone';
@@ -225,6 +226,14 @@ export function RechargeWidget({
   function go(next: Step) {
     setDirection(FLOW.indexOf(next) >= FLOW.indexOf(step) ? 'forward' : 'back');
     setStep(next);
+    // The funnel of /admin/visites: which screen each visitor reached.
+    track('step', next);
+  }
+
+  /** Which fields refused — their names only, never what was typed in them. */
+  function trackRefused(next: FieldErrors) {
+    const fields = Object.keys(next).filter((key) => next[key as FieldKey]);
+    if (fields.length > 0) track('error', 'formulaire', { target: fields.join(',') });
   }
 
   /** One place for every error sentence that needs the amounts or the rail's name. */
@@ -270,6 +279,7 @@ export function RechargeWidget({
     if (!quoteResult.ok) {
       const next = { amount: amountError() };
       setErrors(next);
+      trackRefused(next);
       focusFirst(next);
       return;
     }
@@ -281,6 +291,7 @@ export function RechargeWidget({
     const next = validateDetails();
     setErrors(next);
     if (Object.keys(next).length > 0) {
+      trackRefused(next);
       focusFirst(next);
       return;
     }
@@ -299,6 +310,7 @@ export function RechargeWidget({
     }
 
     setSubmitting(true);
+    track('submit', 'commande', { target: method, value: expected.usdCents });
     setServerErrorKey(null);
     try {
       const response = await fetch('/api/orders', {
@@ -343,6 +355,7 @@ export function RechargeWidget({
         });
         setDirection('forward');
         setStep('created');
+        track('step', 'created');
         // Straight to the provider — « Confirmer » was the decision. Nothing
         // is lost by leaving: the response that just arrived carried the
         // `rm_order` cookie, the order's « created » notification has already
@@ -357,12 +370,16 @@ export function RechargeWidget({
       if (response.status === 409 && payload.quote) {
         setServerQuote(payload.quote);
         setServerErrorKey('quote_changed');
+        track('error', 'serveur', { target: 'quote_changed' });
         return;
       }
 
-      setServerErrorKey(payload.error ?? (response.status === 429 ? 'rate_limited' : 'unknown'));
+      const refused = payload.error ?? (response.status === 429 ? 'rate_limited' : 'unknown');
+      setServerErrorKey(refused);
+      track('error', 'serveur', { target: refused });
     } catch {
       setServerErrorKey('network');
+      track('error', 'serveur', { target: 'network' });
     } finally {
       setSubmitting(false);
     }
@@ -559,6 +576,7 @@ export function RechargeWidget({
               return (
                 <label
                   key={item.method}
+                  data-track={`Payer avec ${item.label}`}
                   className={cn(
                     'relative flex min-h-16 cursor-pointer items-center gap-3 rounded-2xl border-2 px-3.5 py-3 transition-[border-color,background-color,box-shadow] duration-200 has-[:focus-visible]:outline-3 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-ink',
                     selected
@@ -846,6 +864,7 @@ function DetailsScreen({
         <button
           type="button"
           onClick={onBack}
+          data-track="Modifier la recharge"
           className="group mt-4 flex w-full items-center justify-between gap-3 rounded-2xl bg-mist px-4 py-3 text-left transition-colors hover:bg-line/60"
         >
           <span className="min-w-0">

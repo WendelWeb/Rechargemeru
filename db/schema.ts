@@ -12,7 +12,8 @@ import {
   uuid,
   type AnyPgColumn,
 } from 'drizzle-orm/pg-core';
-import type { DeviceKind } from '@/lib/analytics/visitor';
+import type { SiteEventType } from '@/lib/analytics/events';
+import type { DeviceKind, NetType } from '@/lib/analytics/visitor';
 import type {
   Actor,
   GatewayMode,
@@ -289,10 +290,62 @@ export const pageViews = pgTable(
     country: text('country'),
     // Decoded from `x-vercel-ip-city` (which arrives URI-encoded).
     city: text('city'),
+    // Random id the browser gave this one page view (8 to 40 URL-safe
+    // characters), repeated on the `site_events` it causes — how a page's
+    // time on screen and scroll depth find their way back to it. Null for
+    // rows older than the journeys, or a beacon that sent none.
+    viewId: text('view_id'),
+    // Screen size in CSS pixels, « 390x844 ».
+    screen: text('screen'),
+    // `navigator.connection.effectiveType`: 'slow-2g' | '2g' | '3g' | '4g'.
+    net: text('net').$type<NetType>(),
+    // `navigator.language` (« fr-FR », « ht »), at most 20 characters.
+    lang: text('lang'),
     createdAt: tz('created_at').notNull().defaultNow(),
   },
   (t) => [
     index('page_views_created_idx').on(t.createdAt),
     index('page_views_device_created_idx').on(t.deviceId, t.createdAt),
+    index('page_views_view_idx').on(t.viewId),
+  ],
+);
+
+/**
+ * What a visitor did on a page, sent in small batches by the browser
+ * (`lib/analytics/client.ts` → `POST /api/events`): a button tapped, a form
+ * step reached, a field refused, the form sent, how long the page stayed on
+ * screen (`page_end`, active milliseconds — several per page when the tab
+ * goes to the background and comes back, each one the time added since the
+ * last) and how far it was scrolled (`scroll`, a percentage).
+ *
+ * The same promises as `page_views`: the two ids are the same random cookie
+ * values, `path` is a pathname, and `name` / `target` are labels the site
+ * itself chose (« cta_hero », « amount_25 »), never what the visitor typed.
+ * `created_at` is the moment the event happened — the server's clock minus
+ * the age the browser reported, so a phone set to the wrong time cannot
+ * move it. Append-only.
+ */
+export const siteEvents = pgTable(
+  'site_events',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    deviceId: text('device_id').notNull(),
+    visitId: text('visit_id').notNull(),
+    // The `page_views.view_id` of the page it happened on, when the browser knew it.
+    viewId: text('view_id'),
+    path: text('path').notNull(),
+    type: text('type').$type<SiteEventType>().notNull(),
+    // At most 80 characters.
+    name: text('name').notNull(),
+    // At most 200 characters: the link's destination, the refused field…
+    target: text('target'),
+    // page_end: active ms (≤ 30 min); scroll: 0–100; anything else: a count.
+    value: integer('value'),
+    createdAt: tz('created_at').notNull().defaultNow(),
+  },
+  (t) => [
+    index('site_events_visit_created_idx').on(t.visitId, t.createdAt),
+    index('site_events_device_created_idx').on(t.deviceId, t.createdAt),
+    index('site_events_created_idx').on(t.createdAt),
   ],
 );

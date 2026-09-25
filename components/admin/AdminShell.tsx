@@ -10,6 +10,7 @@ import {
   Ellipsis,
   ExternalLink,
   LayoutDashboard,
+  MessageCircleQuestion,
   MessagesSquare,
   ReceiptText,
   SlidersHorizontal,
@@ -50,6 +51,7 @@ type Section = { href: string; label: string; short: string; Icon: LucideIcon; e
 
 const DASHBOARD: Section = { href: '/admin', label: 'Tableau de bord', short: 'Accueil', Icon: LayoutDashboard, exact: true };
 const ORDERS: Section = { href: '/admin/commandes', label: 'Commandes', short: 'Commandes', Icon: ReceiptText, exact: false };
+const FOLLOW_UPS: Section = { href: '/admin/relances', label: 'Relances', short: 'Relances', Icon: MessageCircleQuestion, exact: false };
 const VISITS: Section = { href: '/admin/visites', label: 'Visites', short: 'Visites', Icon: ChartNoAxesColumn, exact: false };
 const MORE: Section[] = [
   { href: '/admin/messages', label: 'Messages WhatsApp', short: 'Messages', Icon: MessagesSquare, exact: false },
@@ -57,32 +59,55 @@ const MORE: Section[] = [
   { href: '/admin/parametres', label: 'Paramètres', short: 'Paramètres', Icon: SlidersHorizontal, exact: false },
   { href: '/admin/sante', label: 'Santé', short: 'Santé', Icon: Activity, exact: false },
 ];
-const ALL: Section[] = [DASHBOARD, ORDERS, VISITS, ...MORE];
+const ALL: Section[] = [DASHBOARD, ORDERS, FOLLOW_UPS, VISITS, ...MORE];
 
 export type AdminShellProps = {
   email: string;
   businessName: string;
   /** Live paid + needs_review orders: the badge beside « Commandes ». */
   actionableCount: number;
+  /** Unpaid orders of the week nobody has written about yet: the badge beside « Relances ». */
+  followUpCount?: number;
   children: ReactNode;
 };
 
-function Badge({ count, className }: { count: number; className?: string }) {
+/**
+ * A count beside a section. Yellow means money waiting (« à recharger »);
+ * the quieter mint one means people to write to (« à relancer »).
+ */
+function Badge({
+  count,
+  tone = 'sun',
+  what = 'à recharger',
+  className,
+}: {
+  count: number;
+  tone?: 'sun' | 'mint';
+  what?: string;
+  className?: string;
+}) {
   if (count <= 0) return null;
   return (
     <span
       className={cn(
-        'inline-flex min-w-5 items-center justify-center rounded-full bg-sun px-1.5 text-[11px] leading-5 font-bold text-ink tnum',
+        'inline-flex min-w-5 items-center justify-center rounded-full px-1.5 text-[11px] leading-5 font-bold tnum',
+        tone === 'sun' ? 'bg-sun text-ink' : 'bg-mint-deep text-paper',
         className,
       )}
     >
       {count > 99 ? '99+' : count}
-      <span className="sr-only"> à recharger</span>
+      <span className="sr-only"> {what}</span>
     </span>
   );
 }
 
-export function AdminShell({ email, businessName, actionableCount, children }: AdminShellProps) {
+function sectionBadge(section: Section, actionable: number, followUps: number, className?: string) {
+  if (section === ORDERS) return <Badge count={actionable} className={className} />;
+  if (section === FOLLOW_UPS) return <Badge count={followUps} tone="mint" what="à relancer" className={className} />;
+  return null;
+}
+
+export function AdminShell({ email, businessName, actionableCount, followUpCount = 0, children }: AdminShellProps) {
   const pathname = usePathname();
   const [sheetOpen, setSheetOpen] = useState(false);
 
@@ -163,7 +188,7 @@ export function AdminShell({ email, businessName, actionableCount, children }: A
                   >
                     <Icon className="size-[1.15rem] shrink-0" aria-hidden="true" />
                     <span className="min-w-0 flex-1 truncate">{section.label}</span>
-                    {section === ORDERS ? <Badge count={actionableCount} /> : null}
+                    {sectionBadge(section, actionableCount, followUpCount)}
                   </Link>
                 </li>
               );
@@ -220,7 +245,7 @@ export function AdminShell({ email, businessName, actionableCount, children }: A
         className="fixed inset-x-0 bottom-0 z-40 border-t border-line bg-paper/95 pb-[env(safe-area-inset-bottom)] backdrop-blur-md lg:hidden"
       >
         <ul className="flex items-stretch">
-          {[DASHBOARD, ORDERS, VISITS].map((section) => {
+          {[DASHBOARD, ORDERS, FOLLOW_UPS, VISITS].map((section) => {
             const active = isActive(section);
             const { Icon } = section;
             return (
@@ -240,9 +265,7 @@ export function AdminShell({ email, businessName, actionableCount, children }: A
                     )}
                   >
                     <Icon className="size-5" aria-hidden="true" />
-                    {section === ORDERS ? (
-                      <Badge count={actionableCount} className="absolute -top-1 right-1.5 ring-2 ring-paper" />
-                    ) : null}
+                    {sectionBadge(section, actionableCount, followUpCount, 'absolute -top-1 right-1.5 ring-2 ring-paper')}
                   </span>
                   <span className="text-[11px] leading-none font-semibold">{section.short}</span>
                 </Link>

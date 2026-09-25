@@ -1,11 +1,17 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import {
   ANALYTICS_RANGES,
+  DEVICE_ORDER_LIMIT,
+  JOURNEY_EVENT_LIMIT,
+  JOURNEY_VISIT_LIMIT,
   RANGE_DAYS,
   SNAPSHOT_DAYS,
   analyticsOverview,
+  assembleJourneys,
   dailyDayCount,
   dayKeyPortAuPrince,
+  deviceDetail,
+  deviceFromRow,
   lastDayKeys,
   mergeDeviceStats,
   parseAnalyticsRange,
@@ -14,12 +20,22 @@ import {
   snapshotWindows,
   startOfDayDaysAgo,
   toCount,
+  toDate,
+  toNullableInt,
+  toText,
   visitsSnapshot,
   zeroFillDaily,
+  zeroFunnel,
+  zeroSummary,
+  type DeviceActive,
   type DeviceHistory,
   type DeviceLatest,
   type DeviceOrders,
+  type JourneyEventRow,
+  type JourneyMeasureRow,
+  type JourneyPageRow,
   type RankedDevice,
+  type VisitSpan,
 } from './queries';
 
 /**
@@ -244,13 +260,17 @@ describe('mergeDeviceStats', () => {
     { deviceId: C, totalVisits: 2, firstSeen: at('2026-09-25T16:00:00Z'), lastSeen: at('2026-09-25T17:00:00Z') },
   ];
   const latest: DeviceLatest[] = [
-    { deviceId: A, label: 'Samsung Android · Chrome', kind: 'mobile', country: 'HT', city: 'Pétion-Ville' },
-    { deviceId: B, label: 'Windows · Edge', kind: 'desktop', country: 'US', city: 'Miami' },
-    { deviceId: C, label: null, kind: 'fridge', country: null, city: null },
+    { deviceId: A, label: 'Samsung Android · Chrome', kind: 'mobile', country: 'HT', city: 'Pétion-Ville', path: '/fr/suivi' },
+    { deviceId: B, label: 'Windows · Edge', kind: 'desktop', country: 'US', city: 'Miami', path: '/ht' },
+    { deviceId: C, label: null, kind: 'fridge', country: null, city: null, path: null },
   ];
   const orderCounts: DeviceOrders[] = [
     { deviceId: A, orders: 3, paidOrders: 2 },
     { deviceId: null, orders: 40, paidOrders: 40 },
+  ];
+  const activeTimes: DeviceActive[] = [
+    { deviceId: A, activeMs: 95_000 },
+    { deviceId: B, activeMs: 4_500 },
   ];
 
   it('sorts by visits, then by the most recent sighting', () => {
@@ -258,8 +278,8 @@ describe('mergeDeviceStats', () => {
     expect(stats.map((s) => s.deviceId)).toEqual([B, C, A]);
   });
 
-  it('joins history, latest attributes and orders onto each device', () => {
-    const [b, c, a] = mergeDeviceStats(ranked, history, latest, orderCounts);
+  it('joins history, latest attributes, orders and active time onto each device', () => {
+    const [b, c, a] = mergeDeviceStats(ranked, history, latest, orderCounts, activeTimes);
     expect(a).toEqual({
       deviceId: A,
       label: 'Samsung Android · Chrome',
@@ -273,7 +293,14 @@ describe('mergeDeviceStats', () => {
       city: 'Pétion-Ville',
       orders: 3,
       paidOrders: 2,
+      activeMs: 95_000,
+      lastPath: '/fr/suivi',
     });
+    expect(b.activeMs).toBe(4_500);
+    expect(b.lastPath).toBe('/ht');
+    // No `page_end` in the window: zero, not missing.
+    expect(c.activeMs).toBe(0);
+    expect(c.lastPath).toBeNull();
     expect(b.orders).toBe(0);
     expect(b.paidOrders).toBe(0);
     expect(b.kind).toBe('desktop');
@@ -293,6 +320,8 @@ describe('mergeDeviceStats', () => {
       lastSeen: at('2026-09-25T15:00:00Z'),
       orders: 0,
       paidOrders: 0,
+      activeMs: 0,
+      lastPath: null,
     });
   });
 
@@ -325,7 +354,16 @@ describe('without a database', () => {
     expect(overview.range).toBe('30d');
     expect(overview.from).toEqual(new Date('2026-08-27T04:00:00Z'));
     expect(overview.to).toEqual(now);
-    expect(overview.summary).toEqual({ pageViews: 0, visits: 0, devices: 0, newDevices: 0, orderingDevices: 0 });
+    expect(overview.summary).toEqual({
+      pageViews: 0,
+      visits: 0,
+      devices: 0,
+      newDevices: 0,
+      orderingDevices: 0,
+      activeMs: 0,
+      avgVisitMs: 0,
+      singlePageVisits: 0,
+    });
     expect(overview.previous).toEqual(overview.summary);
     expect(overview.daily).toHaveLength(30);
     expect(overview.daily[0]).toEqual({ day: '2026-08-27', visits: 0, devices: 0, pageViews: 0 });
@@ -335,6 +373,16 @@ describe('without a database', () => {
     expect(overview.sources).toEqual([]);
     expect(overview.countries).toEqual([]);
     expect(overview.kinds).toEqual([]);
+    expect(overview.clicks).toEqual([]);
+    expect(overview.funnel).toEqual({
+      visits: 0,
+      sawHome: 0,
+      reachedDetails: 0,
+      reachedConfirm: 0,
+      submitted: 0,
+      orders: 0,
+      paid: 0,
+    });
   });
 
   it('analyticsOverview gives « today » a week of buckets', async () => {
@@ -352,10 +400,308 @@ describe('without a database', () => {
   it('visitsSnapshot answers zeros and fourteen day buckets', async () => {
     const snapshot = await visitsSnapshot(new Date('2026-09-25T18:00:00Z'));
     expect(snapshot.dbReady).toBe(false);
-    expect(snapshot.today).toEqual({ pageViews: 0, visits: 0, devices: 0, newDevices: 0, orderingDevices: 0 });
+    expect(snapshot.today).toEqual(zeroSummary());
+    expect(snapshot.today.activeMs).toBe(0);
+    expect(snapshot.today.avgVisitMs).toBe(0);
+    expect(snapshot.today.singlePageVisits).toBe(0);
     expect(snapshot.yesterday).toEqual(snapshot.today);
     expect(snapshot.daily).toHaveLength(SNAPSHOT_DAYS);
     expect(snapshot.daily[0].day).toBe('2026-09-12');
     expect(snapshot.daily[13].day).toBe('2026-09-25');
+  });
+
+  it('deviceDetail answers null — for a well-formed id too — and never throws', async () => {
+    await expect(deviceDetail('3f2b8c1e-9a4d-4e7f-8b21-0c5d6e7f8a9b')).resolves.toBeNull();
+  });
+});
+
+describe('deviceDetail — malformed ids', () => {
+  it('answers null before touching any database', async () => {
+    for (const id of ['', 'abc', "x' or 1=1 --", '3f2b8c1e9a4d4e7f8b210c5d6e7f8a9b', ' 3f2b8c1e-9a4d-4e7f-8b21-0c5d6e7f8a9b']) {
+      await expect(deviceDetail(id)).resolves.toBeNull();
+    }
+    await expect(deviceDetail(undefined as never)).resolves.toBeNull();
+  });
+});
+
+describe('raw row readers', () => {
+  it('toDate reads Postgres timestamptz text, with its offset', () => {
+    expect(toDate('2026-09-25 18:00:00.123456+00')).toEqual(new Date('2026-09-25T18:00:00.123Z'));
+    expect(toDate('2026-09-25 14:00:00-04')).toEqual(new Date('2026-09-25T18:00:00Z'));
+    expect(toDate('2026-09-25T18:00:00.000Z')).toEqual(new Date('2026-09-25T18:00:00Z'));
+    const date = new Date('2026-09-25T18:00:00Z');
+    expect(toDate(date)).toBe(date);
+    expect(toDate(date.getTime())).toEqual(date);
+  });
+
+  it('toDate answers null for anything that is not an instant', () => {
+    for (const value of [null, undefined, '', 'garbage', new Date(Number.NaN), {}, true]) {
+      expect(toDate(value)).toBeNull();
+    }
+  });
+
+  it('toText keeps strings only', () => {
+    expect(toText('/fr')).toBe('/fr');
+    expect(toText('')).toBe('');
+    expect(toText(null)).toBeNull();
+    expect(toText(undefined)).toBeNull();
+    expect(toText(3)).toBeNull();
+  });
+
+  it('toNullableInt reads integers and bigint sums, and keeps NULL as null', () => {
+    expect(toNullableInt(4500)).toBe(4500);
+    expect(toNullableInt('4500')).toBe(4500);
+    expect(toNullableInt(BigInt(7))).toBe(7);
+    expect(toNullableInt(0)).toBe(0);
+    expect(toNullableInt(null)).toBeNull();
+    expect(toNullableInt(undefined)).toBeNull();
+    expect(toNullableInt('abc')).toBeNull();
+    expect(toNullableInt({})).toBeNull();
+  });
+});
+
+describe('zero values', () => {
+  it('has every summary figure and every funnel stage at zero', () => {
+    expect(zeroSummary()).toEqual({
+      pageViews: 0,
+      visits: 0,
+      devices: 0,
+      newDevices: 0,
+      orderingDevices: 0,
+      activeMs: 0,
+      avgVisitMs: 0,
+      singlePageVisits: 0,
+    });
+    expect(zeroFunnel()).toEqual({
+      visits: 0,
+      sawHome: 0,
+      reachedDetails: 0,
+      reachedConfirm: 0,
+      submitted: 0,
+      orders: 0,
+      paid: 0,
+    });
+    expect(DEVICE_ORDER_LIMIT).toBe(20);
+  });
+});
+
+describe('deviceFromRow', () => {
+  const ID = '3f2b8c1e-9a4d-4e7f-8b21-0c5d6e7f8a9b';
+
+  it('reads the facts row as the driver hands it over', () => {
+    const device = deviceFromRow(ID, {
+      page_views: '12',
+      label: 'Samsung Android · Chrome',
+      kind: 'mobile',
+      country: 'HT',
+      city: 'Pétion-Ville',
+      screen: '390x844',
+      net: '3g',
+      lang: 'fr-FR',
+      first_seen: '2026-09-01 12:00:00+00',
+      last_seen: '2026-09-25 18:00:00.5+00',
+      active_ms: '184000',
+      visits: '4',
+    });
+    expect(device).toEqual({
+      deviceId: ID,
+      label: 'Samsung Android · Chrome',
+      kind: 'mobile',
+      country: 'HT',
+      city: 'Pétion-Ville',
+      screen: '390x844',
+      net: '3g',
+      lang: 'fr-FR',
+      firstSeen: new Date('2026-09-01T12:00:00Z'),
+      lastSeen: new Date('2026-09-25T18:00:00.500Z'),
+      visits: 4,
+      pageViews: 12,
+      activeMs: 184_000,
+    });
+  });
+
+  it('describes a device seen only through its events', () => {
+    const device = deviceFromRow(ID, {
+      page_views: '0',
+      label: null,
+      kind: null,
+      first_seen: '2026-09-25 18:00:00+00',
+      last_seen: '2026-09-25 18:05:00+00',
+      active_ms: '0',
+      visits: '1',
+    });
+    expect(device).toMatchObject({ pageViews: 0, visits: 1, kind: 'other', label: null, screen: null });
+  });
+
+  it('answers null for a device nobody ever saw', () => {
+    expect(deviceFromRow(ID, undefined)).toBeNull();
+    expect(
+      deviceFromRow(ID, { page_views: '0', first_seen: null, last_seen: null, active_ms: '0', visits: '0' }),
+    ).toBeNull();
+  });
+});
+
+describe('assembleJourneys', () => {
+  const at = (s: string) => new Date(`2026-09-25T${s}Z`);
+  const V1 = 'visitAAAA1111';
+  const V2 = 'visitBBBB2222';
+  const HOME = 'viewHome00000001';
+  const FORM = 'viewForm00000002';
+  const FAQ = 'viewFaq000000003';
+
+  const spans: VisitSpan[] = [
+    { visitId: V1, start: at('10:00:00'), end: at('10:09:00') },
+    { visitId: V2, start: at('15:00:00'), end: at('15:02:00') },
+  ];
+  const pages: JourneyPageRow[] = [
+    // Deliberately out of order: the assembler sorts.
+    { visitId: V1, viewId: FORM, path: '/fr/commander', at: at('10:03:00'), referrerHost: null, utmSource: null },
+    { visitId: V1, viewId: HOME, path: '/fr', at: at('10:00:00'), referrerHost: 'facebook.com', utmSource: 'wa_status' },
+    { visitId: V2, viewId: null, path: '/ht', at: at('15:00:00'), referrerHost: null, utmSource: null },
+    { visitId: V2, viewId: FAQ, path: '/ht/faq', at: at('15:01:00'), referrerHost: null, utmSource: null },
+  ];
+  const events: JourneyEventRow[] = [
+    { visitId: V1, type: 'submit', name: 'order_form', target: null, value: null, path: '/fr/commander', at: at('10:08:00') },
+    { visitId: V1, type: 'click', name: 'cta_hero', target: '/fr/commander', value: null, path: '/fr', at: at('10:02:00') },
+    { visitId: V1, type: 'step', name: 'details', target: null, value: null, path: '/fr/commander', at: at('10:04:00') },
+    { visitId: V1, type: 'error', name: 'phone', target: 'customerPhone', value: 2, path: '/fr/commander', at: at('10:05:00') },
+    // Measures and unknown kinds are never listed as events.
+    { visitId: V1, type: 'page_end', name: 'page', target: null, value: 999, path: '/fr', at: at('10:03:00') },
+    { visitId: V1, type: 'mystery', name: 'x', target: null, value: null, path: '/fr', at: at('10:03:00') },
+    // A visit outside the spans is left out.
+    { visitId: 'ghostVisit99', type: 'click', name: 'lost', target: null, value: null, path: '/fr', at: at('11:00:00') },
+  ];
+  const measures: JourneyMeasureRow[] = [
+    // The home page went to the background twice: 3 000 ms, then 1 500 ms more.
+    { visitId: V1, viewId: HOME, type: 'page_end', value: 3_000 },
+    { visitId: V1, viewId: HOME, type: 'page_end', value: 1_500 },
+    { visitId: V1, viewId: HOME, type: 'scroll', value: 40 },
+    { visitId: V1, viewId: HOME, type: 'scroll', value: 85 },
+    { visitId: V1, viewId: HOME, type: 'scroll', value: 60 },
+    { visitId: V1, viewId: FORM, type: 'page_end', value: 120_000 },
+    { visitId: V1, viewId: FORM, type: 'page_end', value: null },
+    // A page_end without view: the visit's time, nobody's page.
+    { visitId: V1, viewId: null, type: 'page_end', value: 500 },
+    { visitId: V2, viewId: FAQ, type: 'scroll', value: 0 },
+  ];
+
+  const journeys = assembleJourneys({ spans, pages, events, measures });
+  const [second, first] = journeys;
+
+  it('lists the visits newest first', () => {
+    expect(journeys.map((j) => j.visitId)).toEqual([V2, V1]);
+  });
+
+  it('sums every page_end of a page — two reports of 3 000 and 1 500 ms are 4 500 ms', () => {
+    expect(first.pages[0]).toEqual({ viewId: HOME, path: '/fr', at: at('10:00:00'), activeMs: 4_500, scrollPct: 85 });
+  });
+
+  it('keeps the deepest scroll, ignores a NULL page_end, and says null when nothing was measured', () => {
+    expect(first.pages[1]).toEqual({
+      viewId: FORM,
+      path: '/fr/commander',
+      at: at('10:03:00'),
+      activeMs: 120_000,
+      scrollPct: null,
+    });
+    // A scroll of 0 % is a measure, not a missing one.
+    expect(second.pages[1]).toMatchObject({ viewId: FAQ, activeMs: null, scrollPct: 0 });
+  });
+
+  it('never attaches measures to a page without a view id', () => {
+    expect(second.pages[0]).toEqual({ viewId: null, path: '/ht', at: at('15:00:00'), activeMs: null, scrollPct: null });
+  });
+
+  it('sums the visit’s page_end, view or not', () => {
+    expect(first.activeMs).toBe(3_000 + 1_500 + 120_000 + 500);
+    expect(second.activeMs).toBe(0);
+  });
+
+  it('takes the referrer and the campaign of the first page', () => {
+    expect(first.referrer).toBe('facebook.com');
+    expect(first.utm).toBe('wa_status');
+    expect(second.referrer).toBeNull();
+    expect(second.utm).toBeNull();
+  });
+
+  it('lists only taps, steps, refusals and submissions, in order', () => {
+    expect(first.events.map((e) => `${e.type}:${e.name}`)).toEqual([
+      'click:cta_hero',
+      'step:details',
+      'error:phone',
+      'submit:order_form',
+    ]);
+    expect(first.events[2]).toEqual({
+      type: 'error',
+      name: 'phone',
+      target: 'customerPhone',
+      value: 2,
+      path: '/fr/commander',
+      at: at('10:05:00'),
+    });
+    expect(second.events).toEqual([]);
+  });
+
+  it('keeps the span, widened to any row outside it', () => {
+    expect(first.start).toEqual(at('10:00:00'));
+    expect(first.end).toEqual(at('10:09:00'));
+    const [widened] = assembleJourneys({
+      spans: [{ visitId: V1, start: at('10:01:00'), end: at('10:02:00') }],
+      pages,
+      events,
+      measures: [],
+    });
+    expect(widened.start).toEqual(at('10:00:00'));
+    expect(widened.end).toEqual(at('10:08:00'));
+  });
+
+  it('matches a page’s measures on its view id, even when they came under the next visit', () => {
+    const [later, earlier] = assembleJourneys({
+      spans: [
+        { visitId: V1, start: at('10:00:00'), end: at('10:00:00') },
+        { visitId: V2, start: at('10:45:00'), end: at('10:45:00') },
+      ],
+      pages: [{ visitId: V1, viewId: HOME, path: '/fr', at: at('10:00:00'), referrerHost: null, utmSource: null }],
+      events: [],
+      measures: [
+        { visitId: V1, viewId: HOME, type: 'page_end', value: 60_000 },
+        // The tab came back 45 minutes later: a new visit id, the same page.
+        { visitId: V2, viewId: HOME, type: 'page_end', value: 20_000 },
+      ],
+    });
+    expect(earlier.pages[0].activeMs).toBe(80_000);
+    expect(earlier.activeMs).toBe(60_000);
+    expect(later.activeMs).toBe(20_000);
+    expect(later.pages).toEqual([]);
+  });
+
+  it('keeps the first 300 events of a visit and at most 30 visits', () => {
+    const many: JourneyEventRow[] = Array.from({ length: 350 }, (_, i) => ({
+      visitId: V1,
+      type: 'click',
+      name: `b${i}`,
+      target: null,
+      value: null,
+      path: '/fr',
+      at: new Date(at('10:00:00').getTime() + i * 1000),
+    }));
+    const [only] = assembleJourneys({ spans: [spans[0]], pages: [], events: many, measures: [] });
+    expect(only.events).toHaveLength(JOURNEY_EVENT_LIMIT);
+    expect(only.events[299].name).toBe('b299');
+
+    const lots: VisitSpan[] = Array.from({ length: 40 }, (_, i) => ({
+      visitId: `visit${String(i).padStart(4, '0')}`,
+      start: new Date(at('00:00:00').getTime() + i * 60_000),
+      end: new Date(at('00:00:00').getTime() + i * 60_000),
+    }));
+    const listed = assembleJourneys({ spans: lots, pages: [], events: [], measures: [] });
+    expect(listed).toHaveLength(JOURNEY_VISIT_LIMIT);
+    expect(listed[0].visitId).toBe('visit0039');
+    expect(listed[29].visitId).toBe('visit0010');
+  });
+
+  it('lists a repeated span once and answers nothing for no spans', () => {
+    expect(assembleJourneys({ spans: [spans[0], spans[0]], pages, events, measures })).toHaveLength(1);
+    expect(assembleJourneys({ spans: [], pages, events, measures })).toEqual([]);
   });
 });

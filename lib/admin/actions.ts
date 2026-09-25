@@ -126,6 +126,7 @@ function revalidateOrder(orderId: string): void {
   revalidatePath('/admin/commandes');
   revalidatePath(`/admin/commandes/${orderId}`);
   revalidatePath('/admin/notifications');
+  revalidatePath('/admin/relances');
 }
 
 /** Records the status change on the timeline after a successful compare-and-set. */

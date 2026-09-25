@@ -2,7 +2,7 @@
  * lib/rate-limit.ts — shared in-memory sliding-window rate limiter guarding
  * every surface an anonymous caller can reach: order creation (by IP and by
  * phone), the recheck action, the payment-return routes, order tracking, the
- * admin login and the visit beacon.
+ * admin login, the visit beacon and the journey events.
  *
  * HONEST LIMITATION, on purpose: this is IN-MEMORY and PER-INSTANCE. On a
  * serverless deploy every instance keeps its own window and a cold start
@@ -59,6 +59,13 @@ export const RATE_LIMITS = {
    * view is simply not recorded (the visitor never notices).
    */
   visit: { max: 120, windowMs: 600_000 },
+  /**
+   * `POST /api/events` per IP — batches of up to 50 journey events, sent a
+   * few seconds after the first one and whenever the tab is hidden, so a
+   * busy visitor posts a few times a page; twice the page-view budget keeps
+   * the same shared-address headroom. Past it a batch is simply dropped.
+   */
+  events: { max: 240, windowMs: 600_000 },
 } as const satisfies Record<string, RateWindow>;
 
 /**

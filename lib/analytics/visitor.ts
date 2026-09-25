@@ -9,7 +9,8 @@
  * rolling 30-minute cookie. The page is its pathname only (a query string can
  * carry a phone number or an order reference someone pasted), the referrer
  * is its host name only, the user-agent is reduced to « Android · Chrome ».
- * No IP address is stored anywhere.
+ * The screen size, the network class (« 3g ») and the browser's language are
+ * kept only in their ordinary shapes. No IP address is stored anywhere.
  *
  * Everything here is total: it takes whatever a browser (or a script
  * pretending to be one) sent and answers a clean value or `null`, and never
@@ -54,6 +55,17 @@ export function isVisitId(value: string | null | undefined): value is string {
   return typeof value === 'string' && VISIT_ID_RE.test(value);
 }
 
+/**
+ * True for a page-view id the browser could have minted: the same 8 to 40
+ * URL-safe characters as a visit id. It arrives in a request body rather than
+ * a cookie, so it is checked, never trusted — an id of any other shape is
+ * simply dropped (`null`), which costs the row nothing but its link to the
+ * page's time on screen.
+ */
+export function isViewId(value: unknown): value is string {
+  return typeof value === 'string' && VISIT_ID_RE.test(value);
+}
+
 const ID_ALPHABET = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_';
 
 /**
@@ -67,6 +79,21 @@ export function newVisitId(): string {
   let id = '';
   for (const byte of bytes) id += ID_ALPHABET[byte & 63];
   return id;
+}
+
+/**
+ * Who sent a beacon (`/api/visit` or `/api/events`): the two cookies' values
+ * when well-formed, fresh ids otherwise. The device id is lower-cased so a
+ * hand-edited cookie cannot split one browser into two devices.
+ */
+export function visitorIds(
+  deviceCookie: string | null | undefined,
+  visitCookie: string | null | undefined,
+): { deviceId: string; visitId: string } {
+  return {
+    deviceId: isDeviceId(deviceCookie) ? deviceCookie.toLowerCase() : globalThis.crypto.randomUUID(),
+    visitId: isVisitId(visitCookie) ? visitCookie : newVisitId(),
+  };
 }
 
 export type VisitorCookieOptions = {
@@ -371,11 +398,60 @@ export function cleanLocale(raw: unknown): 'fr' | 'ht' | null {
 }
 
 /* -------------------------------------------------------------------------- */
+/* Screen, network, language                                                  */
+/* -------------------------------------------------------------------------- */
+
+/** `navigator.connection.effectiveType` — what the phone's network feels like, not what it is called. */
+export type NetType = 'slow-2g' | '2g' | '3g' | '4g';
+
+export const NET_TYPES: readonly NetType[] = ['slow-2g', '2g', '3g', '4g'];
+
+const MAX_LANG_LENGTH = 20;
+
+/**
+ * The screen as `WIDTHxHEIGHT` in CSS pixels (« 390x844 »): two to five
+ * digits each side, trimmed; anything else is `null`. It tells a small phone
+ * from a large one, which is all the operator needs from it.
+ */
+export function cleanScreen(raw: unknown): string | null {
+  if (typeof raw !== 'string') return null;
+  const value = raw.trim();
+  return /^\d{2,5}x\d{2,5}$/.test(value) ? value : null;
+}
+
+/** One of the four `effectiveType` values, exactly; anything else (Safari sends none) is `null`. */
+export function cleanNet(raw: unknown): NetType | null {
+  return (NET_TYPES as readonly unknown[]).includes(raw) ? (raw as NetType) : null;
+}
+
+/**
+ * `navigator.language` as a BCP 47 tag of the ordinary shape — a two- or
+ * three-letter language and up to two subtags (« fr », « fr-FR », « ht-HT »,
+ * « zh-Hant-TW ») — trimmed, kept in the case it came in, at most 20
+ * characters; anything else is `null`.
+ */
+export function cleanLang(raw: unknown): string | null {
+  if (typeof raw !== 'string') return null;
+  const value = raw.trim();
+  if (!value || value.length > MAX_LANG_LENGTH) return null;
+  return /^[A-Za-z]{2,3}(-[A-Za-z0-9]{2,8}){0,2}$/.test(value) ? value : null;
+}
+
+/* -------------------------------------------------------------------------- */
 /* The beacon                                                                 */
 /* -------------------------------------------------------------------------- */
 
 /** What a beacon body may carry, not yet trusted. */
-export type VisitPayload = { path: unknown; referrer: unknown; locale: unknown; utm: unknown };
+export type VisitPayload = {
+  path: unknown;
+  referrer: unknown;
+  locale: unknown;
+  utm: unknown;
+  viewId: unknown;
+  screen: unknown;
+  net: unknown;
+  lang: unknown;
+};
 
 /**
  * The beacon's JSON body, read from raw text so a `text/plain` body (what
@@ -392,7 +468,16 @@ export function parseVisitBody(text: string): VisitPayload | null {
   }
   if (typeof data !== 'object' || data === null || Array.isArray(data)) return null;
   const record = data as Record<string, unknown>;
-  return { path: record.path, referrer: record.referrer, locale: record.locale, utm: record.utm };
+  return {
+    path: record.path,
+    referrer: record.referrer,
+    locale: record.locale,
+    utm: record.utm,
+    viewId: record.viewId,
+    screen: record.screen,
+    net: record.net,
+    lang: record.lang,
+  };
 }
 
 /** Every column of a `page_views` row except the two ids and the timestamp. */
@@ -405,12 +490,18 @@ export type PageViewFields = {
   deviceLabel: string | null;
   country: string | null;
   city: string | null;
+  viewId: string | null;
+  screen: string | null;
+  net: NetType | null;
+  lang: string | null;
 };
 
 /**
  * One beacon, reduced to what `page_views` keeps; `null` when the body is not
  * a beacon or its path is not one we record. `country` and `city` are the raw
- * Vercel headers; `ownHost` is `req.nextUrl.host`.
+ * Vercel headers; `ownHost` is `req.nextUrl.host`. The four optional fields
+ * (`viewId`, `screen`, `net`, `lang`) are each `null` when absent or not of
+ * the expected shape — a bad one never costs the page view itself.
  */
 export function pageViewFields(input: {
   body: string;
@@ -433,5 +524,9 @@ export function pageViewFields(input: {
     deviceLabel: device.label,
     country: cleanCountry(input.country),
     city: decodeCity(input.city),
+    viewId: isViewId(payload.viewId) ? payload.viewId : null,
+    screen: cleanScreen(payload.screen),
+    net: cleanNet(payload.net),
+    lang: cleanLang(payload.lang),
   };
 }

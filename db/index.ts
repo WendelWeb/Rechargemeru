@@ -57,6 +57,20 @@ export function pgErrorCode(err: unknown): string | null {
   return null;
 }
 
+/**
+ * What a failed query may say in the logs when its parameters must not:
+ * drizzle's own message is « Failed query: … params: … », and for the visitor
+ * analytics the parameters are cookie values. Only the driver's cause (or a
+ * message that is not drizzle's) and the SQLSTATE are kept.
+ */
+export function queryFailureText(err: unknown): string {
+  const code = pgErrorCode(err);
+  const cause = err instanceof Error && err.cause instanceof Error ? err.cause.message : null;
+  const own = err instanceof Error && !err.message.startsWith('Failed query') ? err.message : null;
+  const text = cause || own || 'unknown error';
+  return code ? `${text} (${code})` : text;
+}
+
 /** True for a `unique_violation` (23505): a duplicate reference, provider ref or notification key. */
 export function isUniqueViolation(err: unknown): boolean {
   return pgErrorCode(err) === '23505';

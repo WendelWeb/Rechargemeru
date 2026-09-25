@@ -5,14 +5,19 @@ import {
   MAX_VISIT_BODY_BYTES,
   VISIT_COOKIE,
   VISIT_IDLE_MS,
+  NET_TYPES,
   cleanCountry,
+  cleanLang,
   cleanLocale,
+  cleanNet,
+  cleanScreen,
   cleanUtm,
   decodeCity,
   describeDevice,
   deviceCookieOptions,
   isAutomatedAgent,
   isDeviceId,
+  isViewId,
   isVisitId,
   newVisitId,
   pageViewFields,
@@ -20,6 +25,7 @@ import {
   referrerHost,
   sanitizePath,
   visitCookieOptions,
+  visitorIds,
 } from './visitor';
 
 /** Real user-agents, parsed by the very ua-parser Next ships — the labels are checked end to end. */
@@ -124,6 +130,43 @@ describe('visit ids', () => {
     expect(isVisitId('abcd;efgh')).toBe(false);
     expect(isVisitId(undefined)).toBe(false);
     expect(isVisitId(null)).toBe(false);
+  });
+});
+
+describe('isViewId', () => {
+  it('accepts what the browser mints: 8 to 40 URL-safe characters', () => {
+    expect(isViewId('3f2b8c1e9a4d4e7f8b210c5d')).toBe(true);
+    expect(isViewId('abcdEFGH')).toBe(true);
+    expect(isViewId('a_b-c'.repeat(8))).toBe(true);
+  });
+
+  it('refuses anything else, whatever its type', () => {
+    expect(isViewId('abcdEFG')).toBe(false);
+    expect(isViewId('a'.repeat(41))).toBe(false);
+    expect(isViewId('abcd efgh')).toBe(false);
+    expect(isViewId('abcd/efgh')).toBe(false);
+    expect(isViewId(12345678)).toBe(false);
+    expect(isViewId(null)).toBe(false);
+    expect(isViewId(undefined)).toBe(false);
+    expect(isViewId({ id: 'abcdEFGH' })).toBe(false);
+  });
+});
+
+describe('visitorIds', () => {
+  const DEVICE = '3f2b8c1e-9a4d-4e7f-8b21-0c5d6e7f8a9b';
+
+  it('keeps well-formed cookies, lower-casing the device', () => {
+    expect(visitorIds(DEVICE, 'abcdEFGH1234')).toEqual({ deviceId: DEVICE, visitId: 'abcdEFGH1234' });
+    expect(visitorIds(DEVICE.toUpperCase(), 'abcdEFGH1234').deviceId).toBe(DEVICE);
+  });
+
+  it('mints fresh ids for missing or malformed cookies', () => {
+    const minted = visitorIds(undefined, 'bad id');
+    expect(isDeviceId(minted.deviceId)).toBe(true);
+    expect(minted.visitId).toMatch(/^[A-Za-z0-9_-]{16}$/);
+    const other = visitorIds('not-a-uuid', null);
+    expect(other.deviceId).not.toBe(minted.deviceId);
+    expect(isVisitId(other.visitId)).toBe(true);
   });
 });
 
@@ -387,13 +430,86 @@ describe('cleanCountry and cleanLocale', () => {
   });
 });
 
+describe('cleanScreen, cleanNet and cleanLang', () => {
+  it('keeps a screen size of the usual shape', () => {
+    expect(cleanScreen('390x844')).toBe('390x844');
+    expect(cleanScreen(' 1920x1080 ')).toBe('1920x1080');
+    expect(cleanScreen('10x10')).toBe('10x10');
+    expect(cleanScreen('99999x99999')).toBe('99999x99999');
+  });
+
+  it('refuses any other screen', () => {
+    for (const raw of ['390X844', '390 x 844', '390x', 'x844', '1x844', '390x844x2', '100000x1', '390×844', '', null, 390, undefined]) {
+      expect(cleanScreen(raw)).toBeNull();
+    }
+  });
+
+  it('keeps the four network classes, exactly', () => {
+    expect(NET_TYPES).toEqual(['slow-2g', '2g', '3g', '4g']);
+    for (const net of NET_TYPES) expect(cleanNet(net)).toBe(net);
+    for (const raw of ['5g', '4G', ' 4g', 'wifi', '', null, 4, undefined]) {
+      expect(cleanNet(raw)).toBeNull();
+    }
+  });
+
+  it('keeps an ordinary language tag in the case it came', () => {
+    expect(cleanLang('fr')).toBe('fr');
+    expect(cleanLang('fr-FR')).toBe('fr-FR');
+    expect(cleanLang('ht-HT')).toBe('ht-HT');
+    expect(cleanLang(' en-US ')).toBe('en-US');
+    expect(cleanLang('zh-Hant-TW')).toBe('zh-Hant-TW');
+    expect(cleanLang('es-419')).toBe('es-419');
+    expect(cleanLang('haw')).toBe('haw');
+  });
+
+  it('refuses anything else, or longer than 20 characters', () => {
+    for (const raw of [
+      'f',
+      'fren',
+      'fr_FR',
+      'fr-F',
+      'fr-FR-x-y',
+      'fr-FR-Paris-xx',
+      'abc-abcdefgh-abcdefgh',
+      '<script>',
+      '',
+      null,
+      7,
+      undefined,
+    ]) {
+      expect(cleanLang(raw)).toBeNull();
+    }
+  });
+});
+
 describe('parseVisitBody', () => {
-  it('reads the four fields of a beacon', () => {
-    expect(parseVisitBody('{"path":"/fr","referrer":"","locale":"fr","utm":"facebook","extra":1}')).toEqual({
+  it('reads the eight fields of a beacon', () => {
+    expect(
+      parseVisitBody(
+        '{"path":"/fr","referrer":"","locale":"fr","utm":"facebook","viewId":"abcdEFGH","screen":"390x844","net":"4g","lang":"fr-FR","extra":1}',
+      ),
+    ).toEqual({
       path: '/fr',
       referrer: '',
       locale: 'fr',
       utm: 'facebook',
+      viewId: 'abcdEFGH',
+      screen: '390x844',
+      net: '4g',
+      lang: 'fr-FR',
+    });
+  });
+
+  it('leaves absent optional fields undefined', () => {
+    expect(parseVisitBody('{"path":"/fr"}')).toEqual({
+      path: '/fr',
+      referrer: undefined,
+      locale: undefined,
+      utm: undefined,
+      viewId: undefined,
+      screen: undefined,
+      net: undefined,
+      lang: undefined,
     });
   });
 
@@ -421,6 +537,10 @@ describe('pageViewFields', () => {
       referrer: 'https://l.facebook.com/l.php?u=x',
       locale: 'fr',
       utm: 'Facebook',
+      viewId: '3f2b8c1e9a4d4e7f8b210c5d',
+      screen: '390x844',
+      net: '3g',
+      lang: 'fr-FR',
     });
     expect(pageViewFields({ ...base, body })).toEqual({
       path: '/fr',
@@ -431,6 +551,21 @@ describe('pageViewFields', () => {
       deviceLabel: 'Samsung Android · Chrome',
       country: 'HT',
       city: 'Pétion-Ville',
+      viewId: '3f2b8c1e9a4d4e7f8b210c5d',
+      screen: '390x844',
+      net: '3g',
+      lang: 'fr-FR',
+    });
+  });
+
+  it('stores a malformed optional field as null and still keeps the view', () => {
+    const body = JSON.stringify({ path: '/fr', viewId: 'x y', screen: '390 x 844', net: '5g', lang: 'français' });
+    expect(pageViewFields({ ...base, body })).toMatchObject({
+      path: '/fr',
+      viewId: null,
+      screen: null,
+      net: null,
+      lang: null,
     });
   });
 
@@ -444,6 +579,10 @@ describe('pageViewFields', () => {
       deviceLabel: 'Samsung Android · Chrome',
       country: null,
       city: null,
+      viewId: null,
+      screen: null,
+      net: null,
+      lang: null,
     });
   });
 

@@ -5,7 +5,7 @@
   },
   "title": "Kondisyon itilizasyon",
   "lead": "Kondisyon sa yo esplike sèvis la, sa nou pran angajman pou nou fè, ak sa nou tann de ou.",
-  "updated": "Dènye mizajou : 6 septanm 2026.",
+  "updated": "Dènye mizajou : 25 septanm 2026.",
   "sections": {
     "service": {
       "title": "Sèvis la",
@@ -34,6 +34,10 @@
     "data": {
       "title": "Done pèsonèl",
       "body": "Nou kenbe sèlman sa sèvis la bezwen : non, nimewo WhatsApp, imel si ou bay youn, idantifyan Meru, ansanm ak istwa kòmand lan ak peman li yo. Done sa yo sèvi pou egzekite kòmand lan, pou avèti ou, pou reponn yon reklamasyon epi pou nou respekte obligasyon kontablite nou. Nou pa vann yo e nou pa sèvi ak yo pou piblisite. Paj piblik yon kòmand kache nimewo telefòn nan ak idantifyan Meru a ; detay konplè yo parèt sèlman sou aparèy ki te kreye kòmand lan, nan kont ki te pase kòmand lan, oswa apre nou verifye referans lan ak nimewo a. Ekri nou sou WhatsApp pou nenpòt demann korije oswa efase."
+    },
+    "analytics": {
+      "title": "Mezi vizit yo",
+      "body": "Pou nou amelyore sit la, nou mezire kijan moun sèvi avè l : nou mete yon nimewo anonim nan yon cookie nan navigatè w, epi nou note paj ou louvri yo, konbyen tan ou pase, bouton ou peze yo, gwosè ekran an, kalite koneksyon an ak peyi a apeprè. Nou pa anrejistre anyen ou tape nan yon kaz, nou pa kenbe adrès IP, epi mezi sa yo pa sèvi pou piblisite ni nou pa bay pèsonn yo."
     },
     "notAffiliated": {
       "title": "Okenn lyen ak Meru",

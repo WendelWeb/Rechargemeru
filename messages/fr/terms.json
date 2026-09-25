@@ -5,7 +5,7 @@
   },
   "title": "Conditions d'utilisation",
   "lead": "Ces conditions décrivent le service, ce que nous nous engageons à faire, et ce que nous attendons de vous.",
-  "updated": "Dernière mise à jour : 6 septembre 2026.",
+  "updated": "Dernière mise à jour : 25 septembre 2026.",
   "sections": {
     "service": {
       "title": "Le service",
@@ -34,6 +34,10 @@
     "data": {
       "title": "Données personnelles",
       "body": "Nous conservons uniquement ce qui est nécessaire au service : nom, numéro WhatsApp, email si vous en donnez un, identifiant Meru, et l'historique de la commande et de ses paiements. Ces données servent à exécuter la commande, à vous prévenir, à répondre à une réclamation et à respecter nos obligations comptables. Elles ne sont ni vendues ni utilisées à des fins publicitaires. La page publique d'une commande masque le téléphone et l'identifiant Meru ; les détails complets n'apparaissent que sur l'appareil qui a créé la commande, dans le compte depuis lequel elle a été passée, ou après vérification de la référence et du numéro. Écrivez-nous sur WhatsApp pour toute demande de correction ou de suppression."
+    },
+    "analytics": {
+      "title": "Mesure d'audience",
+      "body": "Pour améliorer le site, nous mesurons comment il est utilisé : un numéro anonyme est enregistré dans un cookie de votre navigateur, et nous notons les pages ouvertes, le temps passé, les boutons touchés, la taille de l'écran, le type de connexion et le pays approximatif. Rien de ce que vous tapez dans un champ n'est enregistré, aucune adresse IP n'est conservée, et ces mesures ne servent à aucune publicité ni ne sont transmises à qui que ce soit."
     },
     "notAffiliated": {
       "title": "Aucune affiliation",

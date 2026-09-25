@@ -17,6 +17,7 @@ const SECTIONS = [
   'refund',
   'expiry',
   'data',
+  'analytics',
   'notAffiliated',
   'support',
 ] as const;

@@ -89,7 +89,7 @@ describe('ipFromHeaders', () => {
 });
 
 describe('RATE_LIMITS', () => {
-  it('defines the seven named windows with the agreed budgets', () => {
+  it('defines the eight named windows with the agreed budgets', () => {
     expect(RATE_LIMITS.orderIp).toEqual({ max: 60, windowMs: 600_000 });
     expect(RATE_LIMITS.orderPhone).toEqual({ max: 5, windowMs: 600_000 });
     expect(RATE_LIMITS.recheck).toEqual({ max: 30, windowMs: 60_000 });
@@ -97,7 +97,8 @@ describe('RATE_LIMITS', () => {
     expect(RATE_LIMITS.track).toEqual({ max: 20, windowMs: 300_000 });
     expect(RATE_LIMITS.login).toEqual({ max: 10, windowMs: 900_000 });
     expect(RATE_LIMITS.visit).toEqual({ max: 120, windowMs: 600_000 });
-    expect(Object.keys(RATE_LIMITS)).toHaveLength(7);
+    expect(RATE_LIMITS.events).toEqual({ max: 240, windowMs: 600_000 });
+    expect(Object.keys(RATE_LIMITS)).toHaveLength(8);
   });
 
   it('every window is positive', () => {
