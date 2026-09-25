@@ -10,13 +10,13 @@ import { VisitsPanel } from '@/components/admin/VisitsPanel';
 import { dashboardStats, type PeriodTotals } from '@/lib/admin/queries';
 import { orderMomentFr } from '@/lib/admin/order-status';
 import { timeAgoFr } from '@/lib/admin/time';
-import { buildWhatsAppMessages, type WhatsAppMessage } from '@/lib/admin/whatsapp-messages';
 import { visitsSnapshot } from '@/lib/analytics/queries';
 import { TIME_ZONE, formatHtg, formatUsdShort } from '@/lib/format';
 import { listActionable, listOrders } from '@/lib/orders/queries';
 import type { OrderRow } from '@/lib/orders/types';
 import { getSettings } from '@/lib/settings/store';
-import { siteUrl } from '@/lib/site-url';
+import { whatsappKits } from '@/lib/whatsapp/context';
+import { getWhatsAppStyle } from '@/lib/whatsapp/style-store';
 
 export const dynamic = 'force-dynamic';
 
@@ -36,21 +36,6 @@ const headerDate = new Intl.DateTimeFormat('fr-FR', {
   minute: '2-digit',
   hourCycle: 'h23',
 });
-
-/**
- * Les messages WhatsApp de chaque commande d'une liste, indexés par
- * identifiant. Construits ici, pas dans la carte : le catalogue a besoin des
- * réglages (nom commercial, adresse publique) que seul le serveur lit.
- */
-function whatsappFor(orders: OrderRow[], businessName: string): Record<string, WhatsAppMessage[]> {
-  const ctx = { siteUrl: siteUrl(), businessName };
-  const out: Record<string, WhatsAppMessage[]> = {};
-  for (const order of orders) {
-    const messages = buildWhatsAppMessages(order, ctx);
-    if (messages.length > 0) out[order.id] = messages;
-  }
-  return out;
-}
 
 function momentsFor(orders: OrderRow[], now: Date): Record<string, string> {
   return Object.fromEntries(orders.map((order) => [order.id, orderMomentFr(order, now)]));
@@ -97,16 +82,18 @@ export default async function AdminDashboardPage({ searchParams }: { searchParam
   const showTests = raw === '1';
   const now = new Date();
 
-  const [settings, stats, actionable, recent, visits] = await Promise.all([
+  const [settings, stats, actionable, recent, visits, waStyle] = await Promise.all([
     getSettings(),
     dashboardStats(now),
     listActionable({ includeSandbox: showTests, limit: 24 }),
     listOrders({ mode: showTests ? 'all' : 'live', limit: FEED_SIZE }),
     visitsSnapshot(now),
+    getWhatsAppStyle(),
   ]);
 
-  const waActionable = whatsappFor(actionable, settings.businessName);
-  const waRecent = whatsappFor(recent.orders, settings.businessName);
+  // Écrire au client est la suite la plus fréquente de la lecture d'une liste.
+  const waActionable = whatsappKits(actionable, settings);
+  const waRecent = whatsappKits(recent.orders, settings);
   const moments = momentsFor([...actionable, ...recent.orders], now);
 
   const paidCount = actionable.filter((order) => order.status === 'paid').length;
@@ -168,7 +155,8 @@ export default async function AdminDashboardPage({ searchParams }: { searchParam
                 key={order.id}
                 order={order}
                 moment={moments[order.id] ?? ''}
-                whatsappMessages={waActionable[order.id]}
+                whatsappKit={waActionable[order.id]}
+                whatsappStyle={waStyle}
               />
             ))}
           </ul>
@@ -220,7 +208,7 @@ export default async function AdminDashboardPage({ searchParams }: { searchParam
         <h2 id="orders-title" className="mb-3 font-display text-2xl font-bold tracking-tight text-ink">
           Commandes
         </h2>
-        <OrdersFeed orders={recent.orders} moments={moments} whatsappByOrder={waRecent} />
+        <OrdersFeed orders={recent.orders} moments={moments} whatsappByOrder={waRecent} whatsappStyle={waStyle} />
       </section>
     </div>
   );

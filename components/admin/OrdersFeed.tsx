@@ -10,13 +10,15 @@ import {
   STATUS_PLURAL_FR,
   formatStatusList,
 } from '@/lib/admin/order-status';
-import type { WhatsAppMessage } from '@/lib/admin/whatsapp-messages';
+import type { WhatsAppKit } from '@/lib/whatsapp/render';
+import type { WhatsAppStyle } from '@/lib/whatsapp/types';
 import type { OrderRow, OrderStatus } from '@/lib/orders/types';
 
 export type OrdersFeedProps = {
   orders: OrderRow[];
   moments: Record<string, string>;
-  whatsappByOrder: Record<string, WhatsAppMessage[]>;
+  whatsappByOrder: Record<string, WhatsAppKit>;
+  whatsappStyle: WhatsAppStyle;
 };
 
 /**
@@ -28,7 +30,7 @@ export type OrdersFeedProps = {
  * The link underneath carries the ticked statuses to `/admin/commandes`,
  * where the same filter runs on every order, not only the latest ones.
  */
-export function OrdersFeed({ orders, moments, whatsappByOrder }: OrdersFeedProps) {
+export function OrdersFeed({ orders, moments, whatsappByOrder, whatsappStyle }: OrdersFeedProps) {
   const [selected, setSelected] = useState<OrderStatus[]>([]);
   const [touched, setTouched] = useState(false);
 
@@ -73,6 +75,7 @@ export function OrdersFeed({ orders, moments, whatsappByOrder }: OrdersFeedProps
           orders={visible}
           moments={moments}
           whatsappByOrder={whatsappByOrder}
+          whatsappStyle={whatsappStyle}
           animate={touched}
           empty={orders.length === 0 ? 'Aucune commande pour l’instant.' : emptyLabel}
         />

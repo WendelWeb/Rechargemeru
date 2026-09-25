@@ -13,10 +13,10 @@ import {
   parseStatusList,
 } from '@/lib/admin/order-status';
 import { orderFiltersToQuery, parseOrderFilters, toOrderFilters } from '@/lib/admin/queries';
-import { buildWhatsAppMessages, type WhatsAppMessage } from '@/lib/admin/whatsapp-messages';
 import { countOrdersByStatus, listOrders } from '@/lib/orders/queries';
 import { getSettings } from '@/lib/settings/store';
-import { siteUrl } from '@/lib/site-url';
+import { whatsappKits } from '@/lib/whatsapp/context';
+import { getWhatsAppStyle } from '@/lib/whatsapp/style-store';
 
 export const dynamic = 'force-dynamic';
 
@@ -37,22 +37,17 @@ export default async function AdminOrdersPage({ searchParams }: { searchParams: 
   const statusParam = formatStatusList(statuses);
   const base = { ...toOrderFilters(filters), status: 'all' as const };
 
-  const [{ orders, total }, counts, settings] = await Promise.all([
+  const [{ orders, total }, counts, settings, waStyle] = await Promise.all([
     listOrders({ ...base, statuses }),
     countOrdersByStatus(base),
     getSettings(),
+    getWhatsAppStyle(),
   ]);
 
   const now = new Date();
   // Écrire au client est la suite la plus fréquente de la lecture d'une liste.
-  const ctx = { siteUrl: siteUrl(), businessName: settings.businessName };
-  const whatsappByOrder: Record<string, WhatsAppMessage[]> = {};
-  const moments: Record<string, string> = {};
-  for (const order of orders) {
-    const messages = buildWhatsAppMessages(order, ctx);
-    if (messages.length > 0) whatsappByOrder[order.id] = messages;
-    moments[order.id] = orderMomentFr(order, now);
-  }
+  const whatsappByOrder = whatsappKits(orders, settings);
+  const moments = Object.fromEntries(orders.map((order) => [order.id, orderMomentFr(order, now)]));
 
   const chipStatuses = STATUS_FILTER_ORDER.filter(
     (status) => PRIMARY_STATUS_FILTERS.includes(status) || (counts[status] ?? 0) > 0 || statuses.includes(status),
@@ -83,6 +78,7 @@ export default async function AdminOrdersPage({ searchParams }: { searchParams: 
           orders={orders}
           moments={moments}
           whatsappByOrder={whatsappByOrder}
+          whatsappStyle={waStyle}
           empty={
             filters.q
               ? `Aucune commande ne correspond à « ${filters.q} » avec ces filtres.`

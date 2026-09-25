@@ -10,6 +10,7 @@ import {
   Ellipsis,
   ExternalLink,
   LayoutDashboard,
+  MessagesSquare,
   ReceiptText,
   SlidersHorizontal,
   X,
@@ -51,6 +52,7 @@ const DASHBOARD: Section = { href: '/admin', label: 'Tableau de bord', short: 'A
 const ORDERS: Section = { href: '/admin/commandes', label: 'Commandes', short: 'Commandes', Icon: ReceiptText, exact: false };
 const VISITS: Section = { href: '/admin/visites', label: 'Visites', short: 'Visites', Icon: ChartNoAxesColumn, exact: false };
 const MORE: Section[] = [
+  { href: '/admin/messages', label: 'Messages WhatsApp', short: 'Messages', Icon: MessagesSquare, exact: false },
   { href: '/admin/notifications', label: 'Notifications', short: 'Notifications', Icon: Bell, exact: false },
   { href: '/admin/parametres', label: 'Paramètres', short: 'Paramètres', Icon: SlidersHorizontal, exact: false },
   { href: '/admin/sante', label: 'Santé', short: 'Santé', Icon: Activity, exact: false },

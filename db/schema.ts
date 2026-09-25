@@ -32,6 +32,7 @@ import type {
   WebhookSource,
 } from '@/lib/orders/types';
 import type { FeeRule } from '@/lib/settings/types';
+import type { WhatsAppStyle } from '@/lib/whatsapp/types';
 
 /**
  * Recharge Meru — Postgres schema (Neon over neon-http, Drizzle ORM).
@@ -84,6 +85,19 @@ export const platformSettings = pgTable('platform_settings', {
   fulfilmentSlaHt: text('fulfilment_sla_ht').notNull().default('mwens pase 2 èdtan'),
   meruHelpFr: text('meru_help_fr'),
   meruHelpHt: text('meru_help_ht'),
+  updatedAt: tz('updated_at').notNull().defaultNow(),
+});
+
+/**
+ * How the operator's WhatsApp messages sound: default tone, emojis, his
+ * signature, his closing line, his jokes, his rewrites. A table of its own on
+ * purpose — `platform_settings.updated_at` is the quote fingerprint, and
+ * coaching a joke must never make a customer's receipt « stale ».
+ * Single row, `id` always `'singleton'`; the JSON is normalised on read.
+ */
+export const whatsappStyle = pgTable('whatsapp_style', {
+  id: text('id').primaryKey().default('singleton'),
+  style: jsonb('style').$type<Partial<WhatsAppStyle>>().notNull().default({}),
   updatedAt: tz('updated_at').notNull().defaultNow(),
 });
 

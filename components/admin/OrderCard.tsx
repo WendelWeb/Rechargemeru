@@ -4,7 +4,8 @@ import { cn } from '@/lib/cn';
 import { Chip } from '@/components/ui/Chip';
 import { MethodBadge } from '@/components/ui/MethodBadge';
 import { WhatsAppMenu } from '@/components/admin/WhatsAppMenu';
-import type { WhatsAppMessage } from '@/lib/admin/whatsapp-messages';
+import type { WhatsAppKit } from '@/lib/whatsapp/render';
+import type { WhatsAppStyle } from '@/lib/whatsapp/types';
 import { formatHtg, formatUsd } from '@/lib/format';
 import type { OrderRow } from '@/lib/orders/types';
 
@@ -17,7 +18,8 @@ export type OrderCardProps = {
    * un bouton qui écrit au client sans quitter le tableau de bord. Absents ou
    * vides (commande de test), la carte reste un simple lien.
    */
-  whatsappMessages?: WhatsAppMessage[];
+  whatsappKit?: WhatsAppKit;
+  whatsappStyle?: WhatsAppStyle;
 };
 
 /**
@@ -29,9 +31,9 @@ export type OrderCardProps = {
  * darkens, so it reads as clickable before anything is clicked; a mis-tap
  * anywhere on it still opens the right order.
  */
-export function OrderCard({ order, moment, whatsappMessages = [] }: OrderCardProps) {
+export function OrderCard({ order, moment, whatsappKit, whatsappStyle }: OrderCardProps) {
   const review = order.status === 'needs_review';
-  const hasWhatsapp = whatsappMessages.length > 0;
+  const hasWhatsapp = Boolean(whatsappKit && whatsappStyle);
 
   return (
     <li className="relative">
@@ -83,16 +85,9 @@ export function OrderCard({ order, moment, whatsappMessages = [] }: OrderCardPro
         </span>
       </Link>
 
-      {hasWhatsapp ? (
+      {whatsappKit && whatsappStyle ? (
         <div className="absolute top-3 right-3 sm:top-4 sm:right-4">
-          <WhatsAppMenu
-            orderId={order.id}
-            reference={order.reference}
-            customerName={order.customerName}
-            customerPhone={order.customerPhone}
-            messages={whatsappMessages}
-            variant="compact"
-          />
+          <WhatsAppMenu kit={whatsappKit} style={whatsappStyle} variant="compact" />
         </div>
       ) : null}
     </li>

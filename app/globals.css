@@ -1,6 +1,13 @@
 @import "tailwindcss";
 
 /*
+ * `short:` — a screen with little height, typically a laptop once the browser
+ * bars are counted (1366x768 leaves about 600px). Dialogs compact their fixed
+ * chrome there so what the operator came to press stays in view.
+ */
+@custom-variant short (@media (max-height: 820px));
+
+/*
  * Design tokens. One accent (sun) on an ink-and-paper base; mint and coral
  * only ever mean "good" and "attention"; MonCash and NatCash keep their own
  * brand colours for their marks and nothing else. Light theme only.

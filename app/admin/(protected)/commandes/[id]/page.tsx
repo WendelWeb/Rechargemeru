@@ -17,7 +17,6 @@ import { WhatsAppMenu } from '@/components/admin/WhatsAppMenu';
 import { orderMomentFr } from '@/lib/admin/order-status';
 import type { NotificationListItem } from '@/lib/admin/queries';
 import { timeAgoFr } from '@/lib/admin/time';
-import { buildWhatsAppMessages } from '@/lib/admin/whatsapp-messages';
 import { formatDateTime, formatHtg, formatRate, formatUsd } from '@/lib/format';
 import { meruAccountLabelFr } from '@/lib/orders/meru-account';
 import { getOrderById, getOrderEvents, getOrderNotifications } from '@/lib/orders/queries';
@@ -26,7 +25,9 @@ import type { NotificationRow, OrderRow } from '@/lib/orders/types';
 import { formatPhone, normalizePhone } from '@/lib/phone';
 import { effectiveRateHtg } from '@/lib/pricing/money';
 import { getSettings } from '@/lib/settings/store';
-import { siteUrl } from '@/lib/site-url';
+import { whatsappContext } from '@/lib/whatsapp/context';
+import { buildWhatsAppKit, renderKitMessage, whatsappHref as waLink } from '@/lib/whatsapp/render';
+import { getWhatsAppStyle } from '@/lib/whatsapp/style-store';
 
 export const dynamic = 'force-dynamic';
 
@@ -36,12 +37,6 @@ export async function generateMetadata({ params }: PageParams): Promise<Metadata
   const { id } = await params;
   const order = await getOrderById(id);
   return { title: order ? `Commande ${order.reference}` : 'Commande' };
-}
-
-/** `https://wa.me/<digits>?text=…`, built here so the admin never imports a locale-aware helper. */
-function waLink(e164: string, text: string): string | null {
-  const digits = e164.replace(/\D/g, '');
-  return digits ? `https://wa.me/${digits}?text=${encodeURIComponent(text)}` : null;
 }
 
 function Row({ label, children }: { label: string; children: ReactNode }) {
@@ -121,10 +116,11 @@ export default async function AdminOrderPage({ params }: PageParams) {
   const order = await getOrderById(id);
   if (!order) notFound();
 
-  const [events, notifications, settings] = await Promise.all([
+  const [events, notifications, settings, waStyle] = await Promise.all([
     getOrderEvents(order.id),
     getOrderNotifications(order.id),
     getSettings(),
+    getWhatsAppStyle(),
   ]);
 
   const now = new Date();
@@ -133,13 +129,11 @@ export default async function AdminOrderPage({ params }: PageParams) {
 
   // Tous les messages que l'opérateur peut écrire à ce client, dans SA langue,
   // les plus pertinents pour l'état de la commande en premier. Une commande de
-  // test n'en propose aucun (voir lib/admin/whatsapp-messages.ts).
-  const waMessages = buildWhatsAppMessages(order, {
-    siteUrl: siteUrl(),
-    businessName: settings.businessName,
-  });
-  const waShortcut = waMessages.find((m) => m.id === 'payment_received');
-  const whatsappHref = waShortcut ? waLink(order.customerPhone, waShortcut.body) : null;
+  // test n'en propose aucun (voir lib/whatsapp/render.ts).
+  const waKit = buildWhatsAppKit(order, whatsappContext(settings));
+  // Le raccourci du panneau de recharge : « paiement reçu », dans le ton par défaut.
+  const waShortcut = waKit ? renderKitMessage(waKit, 'payment_received', waStyle) : null;
+  const whatsappHref = waShortcut ? waLink(order.customerPhone, waShortcut) : null;
 
   const payerWallet = order.payerWallet ? (normalizePhone(order.payerWallet) ?? order.payerWallet) : null;
   const payerMismatch = payerWallet !== null && payerWallet !== order.customerPhone;
@@ -176,16 +170,9 @@ export default async function AdminOrderPage({ params }: PageParams) {
         <Row label="Compte client">{order.clerkUserId ? 'Commande passée depuis un compte' : 'Sans compte'}</Row>
         {order.adminNote ? <Row label="Votre note">{order.adminNote}</Row> : null}
       </dl>
-      {waMessages.length > 0 ? (
+      {waKit ? (
         <div className="mt-4">
-          <WhatsAppMenu
-            orderId={order.id}
-            reference={order.reference}
-            customerName={order.customerName}
-            customerPhone={order.customerPhone}
-            messages={waMessages}
-            className="w-full"
-          />
+          <WhatsAppMenu kit={waKit} style={waStyle} />
           <p className="mt-2 text-xs leading-snug text-ink-muted">
             Déjà rédigé en {order.locale === 'ht' ? 'kreyòl' : 'français'}. Vous relisez dans WhatsApp avant d’envoyer.
           </p>

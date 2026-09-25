@@ -7,7 +7,8 @@ import { MethodBadge } from '@/components/ui/MethodBadge';
 import { StatusPill } from '@/components/ui/StatusPill';
 import { WhatsAppMenu } from '@/components/admin/WhatsAppMenu';
 import { STATUS_DOT_CLASS, awaitsOperator } from '@/lib/admin/order-status';
-import type { WhatsAppMessage } from '@/lib/admin/whatsapp-messages';
+import type { WhatsAppKit } from '@/lib/whatsapp/render';
+import type { WhatsAppStyle } from '@/lib/whatsapp/types';
 import { formatHtg, formatUsd } from '@/lib/format';
 import { statusLabelFr } from '@/lib/orders/transitions';
 import type { OrderRow } from '@/lib/orders/types';
@@ -34,7 +35,9 @@ export type OrderListProps = {
   orders: OrderRow[];
   /** « Payée il y a 5 min », per order id — computed once on the server. */
   moments: Record<string, string>;
-  whatsappByOrder?: Record<string, WhatsAppMessage[]>;
+  whatsappByOrder?: Record<string, WhatsAppKit>;
+  /** The operator's coaching, needed by the message menu. */
+  whatsappStyle?: WhatsAppStyle;
   empty?: ReactNode;
   /** Rows enter one after the other (after a filter change, not on page load). */
   animate?: boolean;
@@ -44,7 +47,14 @@ export type OrderListProps = {
 const GRID =
   'md:grid md:grid-cols-[minmax(0,11rem)_minmax(0,1fr)_minmax(0,7rem)_minmax(0,8.5rem)_minmax(0,9rem)] md:items-center md:gap-5';
 
-export function OrderList({ orders, moments, whatsappByOrder, empty = 'Aucune commande.', animate = false }: OrderListProps) {
+export function OrderList({
+  orders,
+  moments,
+  whatsappByOrder,
+  whatsappStyle,
+  empty = 'Aucune commande.',
+  animate = false,
+}: OrderListProps) {
   if (orders.length === 0) {
     return (
       <div className="rounded-card border border-dashed border-line-strong bg-paper/70 px-5 py-10 text-center text-[15px] text-ink-soft">
@@ -71,7 +81,8 @@ export function OrderList({ orders, moments, whatsappByOrder, empty = 'Aucune co
             key={order.id}
             order={order}
             moment={moments[order.id] ?? ''}
-            whatsappMessages={whatsappByOrder?.[order.id]}
+            whatsappKit={whatsappStyle ? whatsappByOrder?.[order.id] : undefined}
+            whatsappStyle={whatsappStyle}
             rank={animate ? Math.min(index, 10) : null}
           />
         ))}
@@ -83,13 +94,14 @@ export function OrderList({ orders, moments, whatsappByOrder, empty = 'Aucune co
 export type OrderListRowProps = {
   order: OrderRow;
   moment: string;
-  whatsappMessages?: WhatsAppMessage[];
+  whatsappKit?: WhatsAppKit;
+  whatsappStyle?: WhatsAppStyle;
   /** Position in the entrance sequence; `null` for no entrance. */
   rank?: number | null;
 };
 
-export function OrderListRow({ order, moment, whatsappMessages = [], rank = null }: OrderListRowProps) {
-  const hasWhatsapp = whatsappMessages.length > 0;
+export function OrderListRow({ order, moment, whatsappKit, whatsappStyle, rank = null }: OrderListRowProps) {
+  const hasWhatsapp = Boolean(whatsappKit && whatsappStyle);
   const waiting = awaitsOperator(order.status) && order.mode === 'live';
   const htg = order.paidHtg ?? order.totalHtg;
 
@@ -167,16 +179,9 @@ export function OrderListRow({ order, moment, whatsappMessages = [], rank = null
         ) : null}
       </Link>
 
-      {hasWhatsapp ? (
+      {whatsappKit && whatsappStyle ? (
         <div className="absolute right-3 bottom-2.5 md:top-1/2 md:bottom-auto md:-translate-y-1/2">
-          <WhatsAppMenu
-            orderId={order.id}
-            reference={order.reference}
-            customerName={order.customerName}
-            customerPhone={order.customerPhone}
-            messages={whatsappMessages}
-            variant="compact"
-          />
+          <WhatsAppMenu kit={whatsappKit} style={whatsappStyle} variant="compact" />
         </div>
       ) : null}
     </li>

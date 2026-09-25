@@ -36,6 +36,13 @@
       "when": 1790323956955,
       "tag": "0004_page_views",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1790327149013,
+      "tag": "0005_whatsapp_style",
+      "breakpoints": true
     }
   ]
 }

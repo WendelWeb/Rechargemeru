@@ -5,6 +5,7 @@ import { EmptyRow, Table, Tbody, Td, Th, Thead, Tr } from '@/components/ui/Table
 import { cn } from '@/lib/cn';
 import { formatDateTime } from '@/lib/format';
 import type { NotificationListItem } from '@/lib/admin/queries';
+import { manualMessageLabel } from '@/lib/whatsapp/catalogue';
 import type { NotificationChannel, NotificationStatus, NotificationTemplate } from '@/lib/orders/types';
 
 /** Les huit étapes envoyées automatiquement. */
@@ -20,32 +21,15 @@ const AUTOMATIC_LABELS: Record<NotificationTemplate, string> = {
 };
 
 /**
- * Les intentions des messages WhatsApp écrits à la main. Elles ne sont pas des
- * étapes de la commande, mais l'historique les garde telles quelles : savoir
- * ce qui a réellement été dit à un client vaut mieux que de le ranger dans la
- * case la plus proche. Le libellé brut s'affiche si une intention nouvelle
- * arrive ici avant sa traduction.
+ * What a line of the journal says. The eight automatic steps have their own
+ * names; a manual WhatsApp send is named by the catalogue it came from
+ * (« Rappel de paiement (Fun) »). A label nobody knows is shown as it is:
+ * knowing what was really said to a customer beats filing it under the
+ * nearest box.
  */
-const TEMPLATE_LABELS: Record<string, string> = {
-  ...AUTOMATIC_LABELS,
-  payment_reminder: 'Rappel de paiement',
-  payment_help: 'Aide pour payer',
-  payment_proof: 'Preuve de paiement demandée',
-  expired_restart: 'Expirée, recommencer',
-  payment_received: 'Paiement reçu, envoi en cours',
-  confirm_meru_account: 'Confirmation du compte Meru',
-  delay_apology: 'Retard annoncé',
-  meru_blocked_retry: 'Envoi refusé par Meru',
-  closed_hours: 'Hors des heures d’ouverture',
-  delay_bonus: 'Excuses pour le retard, avec bonus',
-  review_proof: 'Vérification en cours',
-  amount_mismatch: 'Montant différent',
-  ask_confirmation: 'Confirmation de réception demandée',
-  refund_announced: 'Remboursement annoncé',
-  refund_done: 'Remboursement effectué',
-  failed_explained: 'Échec expliqué',
-  free_text: 'Message libre',
-};
+function templateLabel(template: string): string {
+  return AUTOMATIC_LABELS[template as NotificationTemplate] ?? manualMessageLabel(template) ?? template;
+}
 
 const CHANNEL_LABELS: Record<NotificationChannel, string> = {
   email: 'Email',
@@ -101,7 +85,7 @@ function NotificationCard({ row, showOrder }: { row: NotificationListItem; showO
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
           <p className="text-[15px] leading-snug font-semibold text-ink">
-            {TEMPLATE_LABELS[row.template] ?? row.template}
+            {templateLabel(row.template)}
           </p>
           <p className="mt-0.5 text-xs text-ink-muted">{subtitleOf(row)}</p>
         </div>
@@ -200,7 +184,7 @@ export function NotificationsTable({ rows, showOrder = false, empty = 'Aucune no
                     </Td>
                   ) : null}
                   <Td>
-                    <span className="block">{TEMPLATE_LABELS[row.template] ?? row.template}</span>
+                    <span className="block">{templateLabel(row.template)}</span>
                     <span className="block text-xs text-ink-muted">{subtitleOf(row)}</span>
                   </Td>
                   <Td>{CHANNEL_LABELS[row.channel] ?? row.channel}</Td>
