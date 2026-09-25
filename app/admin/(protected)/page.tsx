@@ -1,6 +1,6 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
-import { ChevronDown, FlaskConical } from 'lucide-react';
+import { FlaskConical } from 'lucide-react';
 import { Alert } from '@/components/ui/Alert';
 import { buttonClasses } from '@/components/ui/Button';
 import { CardTitle } from '@/components/ui/Card';
@@ -141,25 +141,23 @@ export default async function AdminDashboardPage({ searchParams }: { searchParam
       </section>
 
       {/*
-       * Six more figures, folded away. They are steering numbers, not work,
-       * and unfolded they were a thousand pixels of scrolling between the
-       * operator and the orders below. The summary keeps the two that answer
-       * « comment va la journée ? » so closing it costs nothing.
+       * Les chiffres du jour et du mois, toujours visibles : l'opérateur veut
+       * les voir en ouvrant le tableau de bord, sans avoir à déplier quoi que
+       * ce soit.
        */}
-      <details className="group rounded-card border border-line bg-paper shadow-card">
-        <summary className="flex cursor-pointer list-none items-center justify-between gap-3 px-4 py-3 [&::-webkit-details-marker]:hidden sm:px-5">
-          <div className="min-w-0">
-            <p className="font-display text-base font-semibold tracking-tight text-ink">Aujourd’hui et ce mois</p>
-            <p className="mt-0.5 text-sm text-ink-soft tnum">
-              {formatHtg(stats.today.collectedHtg)} reçues · {formatUsdShort(stats.today.sentUsdCents, 'fr')} envoyés
-              aujourd’hui
-            </p>
-          </div>
-          <ChevronDown
-            className="size-5 shrink-0 text-ink-soft transition-transform group-open:rotate-180"
-            aria-hidden="true"
-          />
-        </summary>
+      <section
+        aria-labelledby="figures-title"
+        className="rounded-card border border-line bg-paper shadow-card"
+      >
+        <div className="px-4 py-3 sm:px-5">
+          <h2 id="figures-title" className="font-display text-base font-semibold tracking-tight text-ink">
+            Aujourd’hui et ce mois
+          </h2>
+          <p className="mt-0.5 text-sm text-ink-soft tnum">
+            {formatHtg(stats.today.collectedHtg)} reçues · {formatUsdShort(stats.today.sentUsdCents, 'fr')} envoyés
+            aujourd’hui
+          </p>
+        </div>
 
         <div className="space-y-5 border-t border-line p-4 sm:p-5">
           <section aria-labelledby="today-title">
@@ -202,7 +200,7 @@ export default async function AdminDashboardPage({ searchParams }: { searchParam
             </div>
           </section>
         </div>
-      </details>
+      </section>
 
       <section aria-labelledby="recent-title">
         <div className="mb-3 flex flex-wrap items-baseline justify-between gap-2">
