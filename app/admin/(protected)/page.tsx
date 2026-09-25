@@ -9,11 +9,9 @@ import { OrdersTable } from '@/components/admin/OrdersTable';
 import { buildWhatsAppMessages, type WhatsAppMessage } from '@/lib/admin/whatsapp-messages';
 import { siteUrl } from '@/lib/site-url';
 import { StatCard } from '@/components/admin/StatCard';
-import { SweepButton } from '@/components/admin/SweepButton';
-import { STALE_PENDING_MS, dashboardStats } from '@/lib/admin/queries';
+import { dashboardStats } from '@/lib/admin/queries';
 import { formatDateTime, formatHtg, formatUsdShort } from '@/lib/format';
-import { listActionable, listOrders, listReconcileCandidates } from '@/lib/orders/queries';
-import { RECONCILE_DEFAULTS } from '@/lib/orders/reconcile';
+import { listActionable, listOrders } from '@/lib/orders/queries';
 import { getSettings } from '@/lib/settings/store';
 import type { OrderRow } from '@/lib/orders/types';
 
@@ -23,7 +21,6 @@ export const metadata: Metadata = { title: 'Tableau de bord' };
 
 type SearchParams = Promise<Record<string, string | string[] | undefined>>;
 
-const DAY_MS = 24 * 3_600_000;
 
 /**
  * Les messages WhatsApp de chaque commande d'une liste, indexés par
@@ -49,25 +46,14 @@ export default async function AdminDashboardPage({ searchParams }: { searchParam
   const showTests = raw === '1';
   const now = new Date();
 
-  const [settings, stats, actionable, stalePending, failedRecently, recent] = await Promise.all([
+  const [settings, stats, actionable, recent] = await Promise.all([
     getSettings(),
     dashboardStats(now),
     listActionable({ includeSandbox: showTests, limit: 20 }),
-    listReconcileCandidates({
-      now,
-      minAgeMs: STALE_PENDING_MS,
-      maxAgeMs: RECONCILE_DEFAULTS.maxAgeMs,
-      notVerifiedSinceMs: RECONCILE_DEFAULTS.notVerifiedSinceMs,
-      maxAttempts: RECONCILE_DEFAULTS.maxAttempts,
-      limit: 10,
-    }),
-    listOrders({ status: 'failed', mode: showTests ? 'all' : 'live', from: new Date(now.getTime() - DAY_MS), limit: 10 }),
     listOrders({ mode: showTests ? 'all' : 'live', limit: 8 }),
   ]);
 
   const waActionable = whatsappFor(actionable, settings.businessName);
-  const waStale = whatsappFor(stalePending, settings.businessName);
-  const waFailed = whatsappFor(failedRecently.orders, settings.businessName);
   const waRecent = whatsappFor(recent.orders, settings.businessName);
 
   return (
@@ -217,36 +203,6 @@ export default async function AdminDashboardPage({ searchParams }: { searchParam
           </section>
         </div>
       </details>
-
-      <section aria-labelledby="stale-title">
-        <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
-          <div className="min-w-0">
-            <CardTitle as="h2">
-              <span id="stale-title">En attente depuis plus de dix minutes</span>
-            </CardTitle>
-            <p className="mt-0.5 text-sm text-ink-soft">Non vérifiées depuis une heure. Un retour perdu se rattrape ici.</p>
-          </div>
-          <SweepButton pending={stalePending.length} />
-        </div>
-        <OrdersTable
-          orders={stalePending}
-          empty="Aucune commande en attente à re-vérifier."
-          compact
-          whatsappByOrder={waStale}
-        />
-      </section>
-
-      <section aria-labelledby="failed-title">
-        <CardTitle as="h2" className="mb-3">
-          <span id="failed-title">Échouées ces vingt-quatre heures</span>
-        </CardTitle>
-        <OrdersTable
-          orders={failedRecently.orders}
-          empty="Aucun échec récent."
-          compact
-          whatsappByOrder={waFailed}
-        />
-      </section>
 
       <section aria-labelledby="recent-title">
         <div className="mb-3 flex flex-wrap items-baseline justify-between gap-2">
