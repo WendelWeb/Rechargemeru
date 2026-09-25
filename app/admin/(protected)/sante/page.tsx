@@ -38,8 +38,8 @@ export default async function AdminHealthPage() {
   return (
     <div className="space-y-6">
       <header>
-        <h1 className="font-display text-2xl font-semibold tracking-tight text-ink">Santé</h1>
-        <p className="mt-0.5 max-w-3xl text-sm leading-snug text-ink-soft">
+        <h1 className="font-display text-3xl font-bold tracking-tight text-ink sm:text-4xl">Santé</h1>
+        <p className="mt-1 max-w-3xl text-sm leading-snug text-ink-soft">
           Ce que ce serveur peut faire en ce moment. Aucun secret n’est affiché : seulement s’il est présent et ce
           qu’il permet.
         </p>

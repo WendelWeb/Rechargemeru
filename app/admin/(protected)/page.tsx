@@ -1,19 +1,22 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
-import { FlaskConical } from 'lucide-react';
+import { CircleCheck, FlaskConical } from 'lucide-react';
 import { Alert } from '@/components/ui/Alert';
 import { buttonClasses } from '@/components/ui/Button';
-import { CardTitle } from '@/components/ui/Card';
+import { Figure } from '@/components/admin/Figure';
 import { OrderCard } from '@/components/admin/OrderCard';
-import { OrdersTable } from '@/components/admin/OrdersTable';
+import { OrdersFeed } from '@/components/admin/OrdersFeed';
+import { VisitsPanel } from '@/components/admin/VisitsPanel';
+import { dashboardStats, type PeriodTotals } from '@/lib/admin/queries';
+import { orderMomentFr } from '@/lib/admin/order-status';
+import { timeAgoFr } from '@/lib/admin/time';
 import { buildWhatsAppMessages, type WhatsAppMessage } from '@/lib/admin/whatsapp-messages';
-import { siteUrl } from '@/lib/site-url';
-import { StatCard } from '@/components/admin/StatCard';
-import { dashboardStats } from '@/lib/admin/queries';
-import { formatDateTime, formatHtg, formatUsdShort } from '@/lib/format';
+import { visitsSnapshot } from '@/lib/analytics/queries';
+import { TIME_ZONE, formatHtg, formatUsdShort } from '@/lib/format';
 import { listActionable, listOrders } from '@/lib/orders/queries';
-import { getSettings } from '@/lib/settings/store';
 import type { OrderRow } from '@/lib/orders/types';
+import { getSettings } from '@/lib/settings/store';
+import { siteUrl } from '@/lib/site-url';
 
 export const dynamic = 'force-dynamic';
 
@@ -21,16 +24,25 @@ export const metadata: Metadata = { title: 'Tableau de bord' };
 
 type SearchParams = Promise<Record<string, string | string[] | undefined>>;
 
+/** How many recent orders the « Commandes » list carries (and filters in the browser). */
+const FEED_SIZE = 50;
+
+const headerDate = new Intl.DateTimeFormat('fr-FR', {
+  timeZone: TIME_ZONE,
+  weekday: 'long',
+  day: 'numeric',
+  month: 'long',
+  hour: '2-digit',
+  minute: '2-digit',
+  hourCycle: 'h23',
+});
 
 /**
  * Les messages WhatsApp de chaque commande d'une liste, indexés par
  * identifiant. Construits ici, pas dans la carte : le catalogue a besoin des
  * réglages (nom commercial, adresse publique) que seul le serveur lit.
  */
-function whatsappFor(
-  orders: OrderRow[],
-  businessName: string,
-): Record<string, WhatsAppMessage[]> {
+function whatsappFor(orders: OrderRow[], businessName: string): Record<string, WhatsAppMessage[]> {
   const ctx = { siteUrl: siteUrl(), businessName };
   const out: Record<string, WhatsAppMessage[]> = {};
   for (const order of orders) {
@@ -40,28 +52,82 @@ function whatsappFor(
   return out;
 }
 
+function momentsFor(orders: OrderRow[], now: Date): Record<string, string> {
+  return Object.fromEntries(orders.map((order) => [order.id, orderMomentFr(order, now)]));
+}
+
+function count(n: number, one: string, many: string): string {
+  return `${n} ${n > 1 ? many : one}`;
+}
+
+function PeriodRow({ title, totals }: { title: string; totals: PeriodTotals }) {
+  return (
+    <div>
+      <h3 className="text-sm font-semibold text-ink">{title}</h3>
+      <dl className="mt-2 grid grid-cols-3 gap-4">
+        <Figure
+          label="Gourdes reçues"
+          value={formatHtg(totals.collectedHtg)}
+          note={count(totals.paidOrders, 'paiement', 'paiements')}
+        />
+        <Figure
+          label="Dollars envoyés"
+          value={formatUsdShort(totals.sentUsdCents, 'fr')}
+          tone="good"
+          note={count(totals.fulfilledOrders, 'recharge', 'recharges')}
+        />
+        <Figure label="Frais encaissés" value={formatHtg(totals.feesHtg)} note="Reçu moins la conversion" />
+      </dl>
+    </div>
+  );
+}
+
+/**
+ * The page the operator opens first, laid out by urgency:
+ *
+ *   1. what has been paid and is waiting for dollars — a yellow block, with a
+ *      card per order and the button that starts the recharge; or, when
+ *      nothing waits, one calm line that says so and when money last came in;
+ *   2. who came to the site today, and the money of the day and the month;
+ *   3. every recent order, with the status chips to narrow it down.
+ */
 export default async function AdminDashboardPage({ searchParams }: { searchParams: SearchParams }) {
   const sp = await searchParams;
   const raw = Array.isArray(sp.tests) ? sp.tests[0] : sp.tests;
   const showTests = raw === '1';
   const now = new Date();
 
-  const [settings, stats, actionable, recent] = await Promise.all([
+  const [settings, stats, actionable, recent, visits] = await Promise.all([
     getSettings(),
     dashboardStats(now),
-    listActionable({ includeSandbox: showTests, limit: 20 }),
-    listOrders({ mode: showTests ? 'all' : 'live', limit: 8 }),
+    listActionable({ includeSandbox: showTests, limit: 24 }),
+    listOrders({ mode: showTests ? 'all' : 'live', limit: FEED_SIZE }),
+    visitsSnapshot(now),
   ]);
 
   const waActionable = whatsappFor(actionable, settings.businessName);
   const waRecent = whatsappFor(recent.orders, settings.businessName);
+  const moments = momentsFor([...actionable, ...recent.orders], now);
+
+  const paidCount = actionable.filter((order) => order.status === 'paid').length;
+  const reviewCount = actionable.length - paidCount;
+  const lastPaid = recent.orders
+    .filter((order) => order.mode === 'live' && order.paidAt)
+    .reduce<Date | null>((latest, order) => (latest && latest > order.paidAt! ? latest : order.paidAt), null);
+
+  const queueTitle =
+    paidCount > 0
+      ? `${count(paidCount, 'commande payée attend', 'commandes payées attendent')} vos dollars`
+      : `${count(reviewCount, 'commande est', 'commandes sont')} à vérifier`;
+
+  const today = headerDate.format(now);
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-8 sm:space-y-10">
       <header className="flex flex-wrap items-end justify-between gap-3">
         <div className="min-w-0">
-          <h1 className="font-display text-2xl font-semibold tracking-tight text-ink">Tableau de bord</h1>
-          <p className="mt-0.5 text-sm text-ink-soft">Heure d’Haïti : {formatDateTime(now)}.</p>
+          <h1 className="font-display text-3xl font-bold tracking-tight text-ink sm:text-4xl">Tableau de bord</h1>
+          <p className="mt-1 text-sm text-ink-soft first-letter:uppercase">{today}, heure d’Haïti</p>
         </div>
         <Link href={showTests ? '/admin' : '/admin?tests=1'} className={buttonClasses('ghost', 'sm')}>
           <FlaskConical className="size-4" aria-hidden="true" />
@@ -77,148 +143,84 @@ export default async function AdminDashboardPage({ searchParams }: { searchParam
       )}
 
       {/*
-       * The queue comes first, before any counter. This is the only section
-       * that is work rather than information, and on a phone whatever is
-       * printed above it is scrolled past every single time.
-       */}
-      <section aria-labelledby="actionable-title">
-        <div className="mb-3">
-          <CardTitle as="h2">
-            <span id="actionable-title">À recharger maintenant</span>
-          </CardTitle>
-          <p className="mt-0.5 text-sm text-ink-soft">Payées d’abord, puis à vérifier ; la plus ancienne en tête.</p>
-        </div>
-        {actionable.length === 0 ? (
-          <p className="rounded-card border border-line bg-paper px-5 py-8 text-center text-ink-soft shadow-card">
-            Rien à recharger. Tout est à jour.
+        The queue comes first, before any figure: it is the only part of this
+        page that is work rather than information, and on a phone whatever is
+        printed above it is scrolled past every single time.
+      */}
+      {actionable.length > 0 ? (
+        <section
+          aria-labelledby="queue-title"
+          className="rounded-[1.75rem] bg-sun-soft p-4 ring-1 ring-sun/50 sm:p-6"
+        >
+          <div className="flex items-center gap-3">
+            <span className="size-3 shrink-0 animate-beat rounded-full bg-sun-deep" aria-hidden="true" />
+            <h2 id="queue-title" className="font-display text-xl leading-tight font-bold tracking-tight text-ink sm:text-2xl">
+              {queueTitle}
+            </h2>
+          </div>
+          <p className="mt-1.5 pl-6 text-sm text-ink-soft">
+            {paidCount > 0 && reviewCount > 0 ? `Et ${count(reviewCount, 'autre', 'autres')} à vérifier. ` : ''}
+            La plus ancienne en premier. Envoyez sur Meru, puis marquez-la rechargée.
           </p>
-        ) : (
-          <ul className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+          <ul className="mt-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
             {actionable.map((order) => (
               <OrderCard
                 key={order.id}
                 order={order}
-                cta="Recharger"
+                moment={moments[order.id] ?? ''}
                 whatsappMessages={waActionable[order.id]}
               />
             ))}
           </ul>
-        )}
-      </section>
+        </section>
+      ) : (
+        <section
+          aria-labelledby="queue-title"
+          className="flex items-center gap-4 rounded-[1.75rem] border border-line bg-paper p-5 shadow-card sm:p-6"
+        >
+          <span className="flex size-11 shrink-0 items-center justify-center rounded-full bg-mint-soft text-mint-deep">
+            <CircleCheck className="size-6" aria-hidden="true" />
+          </span>
+          <div className="min-w-0">
+            <h2 id="queue-title" className="font-display text-lg font-semibold tracking-tight text-ink">
+              Aucune commande payée en attente
+            </h2>
+            <p className="mt-0.5 text-sm text-ink-soft">
+              {lastPaid ? `Dernier paiement reçu ${timeAgoFr(lastPaid, now)}. ` : ''}
+              Les nouvelles commandes payées apparaîtront ici.
+            </p>
+          </div>
+        </section>
+      )}
 
-      <section aria-labelledby="counters-title">
-        <CardTitle as="h2" className="mb-1">
-          <span id="counters-title">Compteurs</span>
-        </CardTitle>
-        <p className="mb-3 text-sm text-ink-soft">Les montants excluent toujours les commandes de test.</p>
-        <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-          <StatCard
-            label="À recharger"
-            value={stats.actionable}
-            tone={stats.actionable > 0 ? 'action' : 'neutral'}
-            hint="Paiements confirmés en attente de vos dollars."
-            href="/admin/commandes?status=paid"
-          />
-          <StatCard
-            label="En attente de paiement"
-            value={stats.stalePending}
-            hint="Créées il y a plus de dix minutes, jamais payées."
-            href="/admin/commandes?status=pending_payment"
-          />
-          <StatCard
-            label="Échouées (24 h)"
-            value={stats.failed24h}
-            tone={stats.failed24h > 0 ? 'attention' : 'neutral'}
-            href="/admin/commandes?status=failed"
-          />
-          <StatCard
-            label="Tests en attente"
-            value={stats.sandboxActionable}
-            hint="Exclues des totaux : ne rien envoyer."
-            href="/admin/commandes?mode=sandbox"
-          />
-        </div>
-      </section>
+      <div className="grid gap-6 lg:grid-cols-2">
+        <VisitsPanel snapshot={visits} />
 
-      {/*
-       * Les chiffres du jour et du mois, toujours visibles : l'opérateur veut
-       * les voir en ouvrant le tableau de bord, sans avoir à déplier quoi que
-       * ce soit.
-       */}
-      <section
-        aria-labelledby="figures-title"
-        className="rounded-card border border-line bg-paper shadow-card"
-      >
-        <div className="px-4 py-3 sm:px-5">
-          <h2 id="figures-title" className="font-display text-base font-semibold tracking-tight text-ink">
+        {/* Toujours déplié : l'opérateur veut ces chiffres en ouvrant la page. */}
+        <section
+          aria-labelledby="figures-title"
+          className="rounded-card border border-line bg-paper p-5 shadow-card sm:p-6"
+        >
+          <h2 id="figures-title" className="font-display text-lg font-semibold tracking-tight text-ink">
             Aujourd’hui et ce mois
           </h2>
           <p className="mt-0.5 text-sm text-ink-soft tnum">
             {formatHtg(stats.today.collectedHtg)} reçues · {formatUsdShort(stats.today.sentUsdCents, 'fr')} envoyés
             aujourd’hui
           </p>
-        </div>
+          <div className="mt-5 space-y-5 border-t border-line pt-5">
+            <PeriodRow title="Aujourd’hui" totals={stats.today} />
+            <PeriodRow title="Ce mois" totals={stats.month} />
+          </div>
+          <p className="mt-5 text-xs text-ink-muted">Les commandes de test ne comptent jamais dans ces montants.</p>
+        </section>
+      </div>
 
-        <div className="space-y-5 border-t border-line p-4 sm:p-5">
-          <section aria-labelledby="today-title">
-            <h3 id="today-title" className="mb-2 text-sm font-semibold text-ink">
-              Aujourd’hui
-            </h3>
-            <div className="grid gap-3 sm:grid-cols-3">
-              <StatCard
-                label="Gourdes reçues"
-                value={formatHtg(stats.today.collectedHtg)}
-                hint={`${stats.today.paidOrders} paiement(s) confirmé(s)`}
-              />
-              <StatCard
-                label="Dollars envoyés"
-                value={formatUsdShort(stats.today.sentUsdCents, 'fr')}
-                tone="good"
-                hint={`${stats.today.fulfilledOrders} recharge(s)`}
-              />
-              <StatCard label="Frais encaissés" value={formatHtg(stats.today.feesHtg)} hint="Reçu moins la conversion." />
-            </div>
-          </section>
-
-          <section aria-labelledby="month-title">
-            <h3 id="month-title" className="mb-2 text-sm font-semibold text-ink">
-              Ce mois
-            </h3>
-            <div className="grid gap-3 sm:grid-cols-3">
-              <StatCard
-                label="Gourdes reçues"
-                value={formatHtg(stats.month.collectedHtg)}
-                hint={`${stats.month.paidOrders} paiement(s) confirmé(s)`}
-              />
-              <StatCard
-                label="Dollars envoyés"
-                value={formatUsdShort(stats.month.sentUsdCents, 'fr')}
-                tone="good"
-                hint={`${stats.month.fulfilledOrders} recharge(s)`}
-              />
-              <StatCard label="Frais encaissés" value={formatHtg(stats.month.feesHtg)} hint="Reçu moins la conversion." />
-            </div>
-          </section>
-        </div>
-      </section>
-
-      <section aria-labelledby="recent-title">
-        <div className="mb-3 flex flex-wrap items-baseline justify-between gap-2">
-          <CardTitle as="h2">
-            <span id="recent-title">Dernières commandes</span>
-          </CardTitle>
-          <Link
-            href="/admin/commandes"
-            className="text-sm font-medium text-ink underline decoration-line underline-offset-4 hover:decoration-ink"
-          >
-            Toutes les commandes
-          </Link>
-        </div>
-        <OrdersTable
-          orders={recent.orders}
-          empty="Aucune commande pour l’instant."
-          whatsappByOrder={waRecent}
-        />
+      <section aria-labelledby="orders-title">
+        <h2 id="orders-title" className="mb-3 font-display text-2xl font-bold tracking-tight text-ink">
+          Commandes
+        </h2>
+        <OrdersFeed orders={recent.orders} moments={moments} whatsappByOrder={waRecent} />
       </section>
     </div>
   );

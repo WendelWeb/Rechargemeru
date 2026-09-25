@@ -56,6 +56,51 @@ function Row({ label, value, muted }: { label: ReactNode; value: ReactNode; mute
   );
 }
 
+/**
+ * The lines between « you receive » and « you pay »: the exchange rate, the
+ * converted amount and every fee, each with what it is (a percentage, a flat
+ * fee in dollars). Shared by the full receipt and by the price detail the
+ * recharge form folds under its total.
+ */
+export function QuoteLines({ quote, locale, className }: { quote: Quote; locale: FormatLocale; className?: string }) {
+  const t = useTranslations('home');
+  return (
+    <dl className={className}>
+      <Row label={t('receipt.rate')} value={formatRate(quote.fxRateHtg, locale)} muted />
+      <Row label={t('receipt.base')} value={formatHtg(quote.baseHtg)} muted />
+      {quote.lines.map((line) => {
+        // The fee's own name, in the language of the page (an
+        // untranslated rule keeps its French label — see feeLineLabel).
+        const label = feeLineLabel(line, locale);
+        // What the fee IS, next to what it costs today: a percentage,
+        // or the flat transfer fee in the dollars it is denominated in
+        // — « Frais de transfert · 3 $ US » on the left, the gourdes it
+        // converts to at this order's rate on the right. A fee already
+        // set in gourdes says the same thing twice, so it gets nothing.
+        const detail =
+          line.kind === 'percent'
+            ? t('receipt.percentDetail', { value: percentFormatter.format(line.value) })
+            : line.kind === 'fixed_usd'
+              ? formatUsdShort(line.value, locale)
+              : null;
+        return (
+          <Row
+            key={line.id}
+            muted
+            label={
+              <>
+                {label}
+                {detail ? <span className="ml-1.5 text-ink-muted">· {detail}</span> : null}
+              </>
+            }
+            value={formatHtg(line.amountHtg)}
+          />
+        );
+      })}
+    </dl>
+  );
+}
+
 export function QuoteReceipt({
   quote,
   locale,
@@ -92,39 +137,7 @@ export function QuoteReceipt({
             </span>
           </div>
 
-          <dl className="mt-3 border-t border-line pt-2">
-            <Row label={t('receipt.rate')} value={formatRate(quote.fxRateHtg, locale)} muted />
-            <Row label={t('receipt.base')} value={formatHtg(quote.baseHtg)} muted />
-            {quote.lines.map((line) => {
-              // The fee's own name, in the language of the page (an
-              // untranslated rule keeps its French label — see feeLineLabel).
-              const label = feeLineLabel(line, locale);
-              // What the fee IS, next to what it costs today: a percentage,
-              // or the flat transfer fee in the dollars it is denominated in
-              // — « Frais de transfert · 3 $ US » on the left, the gourdes it
-              // converts to at this order's rate on the right. A fee already
-              // set in gourdes says the same thing twice, so it gets nothing.
-              const detail =
-                line.kind === 'percent'
-                  ? t('receipt.percentDetail', { value: percentFormatter.format(line.value) })
-                  : line.kind === 'fixed_usd'
-                    ? formatUsdShort(line.value, locale)
-                    : null;
-              return (
-                <Row
-                  key={line.id}
-                  muted
-                  label={
-                    <>
-                      {label}
-                      {detail ? <span className="ml-1.5 text-ink-muted">· {detail}</span> : null}
-                    </>
-                  }
-                  value={formatHtg(line.amountHtg)}
-                />
-              );
-            })}
-          </dl>
+          <QuoteLines quote={quote} locale={locale} className="mt-3 border-t border-line pt-2" />
 
           <div className="mt-3 border-t-2 border-dashed border-line pt-3">
             <div className="flex flex-wrap items-end justify-between gap-x-4 gap-y-1">

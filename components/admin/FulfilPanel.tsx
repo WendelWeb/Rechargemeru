@@ -144,11 +144,12 @@ export function FulfilPanel(props: FulfilPanelProps) {
   return (
     <section
       aria-labelledby="fulfil-title"
-      className="rounded-card border border-line bg-paper p-4 shadow-lift sm:p-6"
+      className="rounded-[1.75rem] border-2 border-sun bg-paper p-4 shadow-lift sm:p-6"
     >
       <div className="flex flex-wrap items-baseline justify-between gap-2">
-        <h2 id="fulfil-title" className="font-display text-lg font-semibold tracking-tight text-ink">
-          Recharger cette commande
+        <h2 id="fulfil-title" className="flex items-center gap-2.5 font-display text-xl font-bold tracking-tight text-ink">
+          <span className="size-2.5 shrink-0 animate-beat rounded-full bg-sun-deep" aria-hidden="true" />
+          {status === 'needs_review' ? 'Vérifier, puis recharger' : 'Recharger cette commande'}
         </h2>
         <span className="font-display text-sm tracking-wide tnum text-ink-muted">{reference}</span>
       </div>

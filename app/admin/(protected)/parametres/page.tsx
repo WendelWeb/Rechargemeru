@@ -14,8 +14,8 @@ export default async function AdminSettingsPage() {
   return (
     <div className="space-y-5">
       <header>
-        <h1 className="font-display text-2xl font-semibold tracking-tight text-ink">Paramètres</h1>
-        <p className="mt-0.5 max-w-3xl text-sm leading-snug text-ink-soft">
+        <h1 className="font-display text-3xl font-bold tracking-tight text-ink sm:text-4xl">Paramètres</h1>
+        <p className="mt-1 max-w-3xl text-sm leading-snug text-ink-soft">
           Ces valeurs décident du prix affiché au client, de qui est prévenu et de ce que le site promet.
           Enregistrer invalide les devis en cours : une commande calculée sur les anciens paramètres sera refusée
           plutôt que facturée à un montant que le client n’a pas vu.

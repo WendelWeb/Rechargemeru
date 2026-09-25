@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { PRICING_RULE_IDS } from '@/lib/settings/defaults';
 import type { FeeRule } from '@/lib/settings/types';
-import { QUICK_AMOUNTS_USD, computeQuote, feeLineLabel, type QuoteResult, type QuoteSettings } from './quote';
+import { PRICE_BOARD_USD, QUICK_AMOUNTS_USD, computeQuote, feeLineLabel, type QuoteResult, type QuoteSettings } from './quote';
 
 const settings = {
   fxRateHtg: 132.5,
@@ -344,5 +344,27 @@ describe('feeLineLabel', () => {
 describe('QUICK_AMOUNTS_USD', () => {
   it('offers the five preset dollar amounts', () => {
     expect([...QUICK_AMOUNTS_USD]).toEqual([5, 10, 20, 50, 100]);
+  });
+
+  it('adds 500 to the price board only', () => {
+    expect([...PRICE_BOARD_USD]).toEqual([5, 10, 20, 50, 100, 500]);
+  });
+});
+
+describe('enforceWalletLimit', () => {
+  it('prices an amount above the wallet ceiling when asked, for the price board only', () => {
+    const big = { usdCents: 50000, method: 'moncash' as const, settings: { ...settings, maxUsdCents: 100000 } };
+    expect(computeQuote(big)).toEqual({ ok: false, error: 'wallet_limit' });
+    const shown = computeQuote({ ...big, enforceWalletLimit: false });
+    expect(shown.ok).toBe(true);
+    if (shown.ok) expect(shown.quote.totalHtg).toBeGreaterThan(75_000);
+  });
+
+  it('still refuses what is out of the operator’s bounds', () => {
+    // max is 500 $ US here: 600 $ US stays refused, ceiling or not.
+    expect(computeQuote({ usdCents: 60000, method: 'moncash', settings, enforceWalletLimit: false })).toEqual({
+      ok: false,
+      error: 'above_maximum',
+    });
   });
 });

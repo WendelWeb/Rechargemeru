@@ -86,6 +86,8 @@ export async function getOrderNotifications(orderId: string, limit = 200): Promi
 
 export type OrderFilters = {
   status?: OrderStatus | 'all';
+  /** Several statuses at once (the admin's status chips); ignored when empty. */
+  statuses?: readonly OrderStatus[];
   method?: PaymentMethod | 'all';
   mode?: GatewayMode | 'all';
   /** Reference, phone, Meru identifier or customer name. */
@@ -126,6 +128,7 @@ function searchCondition(q: string): SQL | undefined {
 function filterConditions(filters: OrderFilters): SQL | undefined {
   const conditions: SQL[] = [];
   if (filters.status && filters.status !== 'all') conditions.push(eq(orders.status, filters.status));
+  if (filters.statuses && filters.statuses.length > 0) conditions.push(inArray(orders.status, [...filters.statuses]));
   if (filters.method && filters.method !== 'all') conditions.push(eq(orders.method, filters.method));
   if (filters.mode && filters.mode !== 'all') conditions.push(eq(orders.mode, filters.mode));
   if (filters.from) conditions.push(gte(orders.createdAt, filters.from));
@@ -146,6 +149,23 @@ export async function listOrders(filters: OrderFilters = {}): Promise<OrderPage>
     db.select({ total: count() }).from(orders).where(where),
   ]);
   return { orders: rows, total: Number(totalRow?.total ?? 0) };
+}
+
+/**
+ * How many orders each status holds under the same filters, status aside —
+ * the counts the status chips show, so « Payées 3 » stays true whatever else
+ * is ticked. Never throws: the chips then show zeros.
+ */
+export async function countOrdersByStatus(filters: OrderFilters = {}): Promise<Partial<Record<OrderStatus, number>>> {
+  if (!dbConfigured()) return {};
+  try {
+    const where = filterConditions({ ...filters, status: 'all', statuses: [] });
+    const rows = await db.select({ status: orders.status, total: count() }).from(orders).where(where).groupBy(orders.status);
+    return Object.fromEntries(rows.map((row) => [row.status, Number(row.total)]));
+  } catch (err) {
+    console.error(`[orders/queries] countOrdersByStatus failed: ${err instanceof Error ? err.message : String(err)}`);
+    return {};
+  }
 }
 
 /**

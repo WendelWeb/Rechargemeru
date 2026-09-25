@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react';
 import { AdminShell } from '@/components/admin/AdminShell';
+import { countActionableOrders } from '@/lib/admin/queries';
 import { requireAdmin } from '@/lib/auth/admin';
 import { getSettings } from '@/lib/settings/store';
 
@@ -17,10 +18,10 @@ export const dynamic = 'force-dynamic';
 
 export default async function ProtectedAdminLayout({ children }: { children: ReactNode }) {
   const admin = await requireAdmin();
-  const settings = await getSettings();
+  const [settings, actionableCount] = await Promise.all([getSettings(), countActionableOrders()]);
 
   return (
-    <AdminShell email={admin.email} businessName={settings.businessName}>
+    <AdminShell email={admin.email} businessName={settings.businessName} actionableCount={actionableCount}>
       {children}
     </AdminShell>
   );

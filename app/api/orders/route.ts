@@ -20,6 +20,12 @@
  * the ordinary case — and the order is then created exactly as it always was,
  * with `accountEmail` left null.
  *
+ * WHICH VISITOR ORDERED: the `rm_device` cookie of the visitor analytics
+ * (`POST /api/visit`) is copied onto the order when it is a well-formed id,
+ * so the back-office can tell which devices went on to order. Like the
+ * account it comes from the request's cookies, never from the body, and an
+ * order is created exactly the same without it.
+ *
  * WHAT NEVER LEAVES THIS ROUTE: provider messages. A failure answers with a
  * stable machine code the UI translates (`home.errors.*`); the raw reason is
  * logged server-side and written on the order's timeline instead. Callback
@@ -27,6 +33,7 @@
  * own orders and never a production one.
  */
 import { NextResponse, type NextRequest } from 'next/server';
+import { DEVICE_COOKIE, isDeviceId } from '@/lib/analytics/visitor';
 import { currentAdmin } from '@/lib/auth/admin';
 import { currentUserEmail, currentUserId } from '@/lib/auth/clerk';
 import { dbConfigured } from '@/lib/env';
@@ -118,6 +125,11 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     currentUserEmail(),
   ]);
 
+  // Anything but a UUID is dropped rather than stored: the cookie is only a
+  // hint, and a hand-edited one must not put free text on an order.
+  const cookieDevice = req.cookies.get(DEVICE_COOKIE)?.value;
+  const deviceId = isDeviceId(cookieDevice) ? cookieDevice.toLowerCase() : null;
+
   const result = await createOrder({
     ...parsed.data,
     origin: req.nextUrl.origin,
@@ -126,6 +138,8 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     // After the spread on purpose: whatever the body carried is overwritten
     // by the session's own answer (Zod strips the key, this makes it moot).
     accountEmail: clerkUserId === null ? null : accountEmail,
+    // Same rule: read from the cookie, never from the body.
+    deviceId,
   });
 
   if (!result.ok) {

@@ -11,7 +11,9 @@
     "terms": "Conditions",
     "support": "Support WhatsApp",
     "primary": "Navigation principale",
-    "footer": "Liens du pied de page"
+    "footer": "Liens du pied de page",
+    "menu": "Menu",
+    "close": "Fermer le menu"
   },
   "account": {
     "signIn": "Se connecter",

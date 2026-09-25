@@ -11,7 +11,9 @@
     "terms": "Kondisyon yo",
     "support": "Sipò WhatsApp",
     "primary": "Navigasyon prensipal",
-    "footer": "Lyen anba paj la"
+    "footer": "Lyen anba paj la",
+    "menu": "Meni",
+    "close": "Fèmen meni an"
   },
   "account": {
     "signIn": "Konekte",

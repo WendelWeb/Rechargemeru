@@ -220,6 +220,25 @@ async function countOrders(where: SQL | undefined): Promise<number> {
   return Number(row?.total ?? 0);
 }
 
+/** Live orders waiting for the operator (`paid` + `needs_review`): the same figure as `DashboardStats.actionable`. */
+const ACTIONABLE = and(LIVE, inArray(orders.status, ['paid', 'needs_review']));
+
+/**
+ * The one number the back-office shell shows on every page, as a badge: how
+ * many live orders wait for the operator right now. One cheap `count(*)`,
+ * never throws — `0` without a database or on failure, so a hiccup costs the
+ * badge, never the page.
+ */
+export async function countActionableOrders(): Promise<number> {
+  if (!dbConfigured()) return 0;
+  try {
+    return await countOrders(ACTIONABLE);
+  } catch (err) {
+    console.error(`[admin/queries] countActionableOrders failed: ${errorText(err)}`);
+    return 0;
+  }
+}
+
 /**
  * Everything the dashboard shows in one round of queries. Never throws: a
  * database hiccup shows zeros with `dbReady: false` rather than a 500 on the
@@ -240,7 +259,7 @@ export async function dashboardStats(now: Date = new Date()): Promise<DashboardS
     const [today, month, actionable, stalePending, failed24h, sandboxActionable] = await Promise.all([
       periodTotals(startOfDayPortAuPrince(now)),
       periodTotals(startOfMonthPortAuPrince(now)),
-      countOrders(and(LIVE, inArray(orders.status, ['paid', 'needs_review']))),
+      countOrders(ACTIONABLE),
       countOrders(
         and(LIVE, eq(orders.status, 'pending_payment'), lt(orders.createdAt, new Date(now.getTime() - STALE_PENDING_MS))),
       ),

@@ -36,7 +36,7 @@ export function LocaleSwitcher({ className }: LocaleSwitcherProps) {
             aria-label={name}
             aria-current={active ? 'true' : undefined}
             className={cn(
-              'inline-flex min-h-tap items-center justify-center rounded-[10px] px-3 text-sm font-semibold transition-colors',
+              'inline-flex min-h-tap items-center justify-center rounded-[10px] px-2.5 text-sm font-semibold transition-colors sm:px-3',
               active ? 'bg-paper text-ink shadow-sm' : 'text-ink-soft hover:text-ink',
             )}
           >

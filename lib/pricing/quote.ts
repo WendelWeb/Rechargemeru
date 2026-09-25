@@ -29,6 +29,12 @@ import { HTG_WALLET_MAX, effectiveRateHtg, percentOf, rateToE4, usdCentsToHtg } 
 export const QUICK_AMOUNTS_USD = [5, 10, 20, 50, 100] as const;
 
 /**
+ * The rows of « Les prix du jour » on the home page: the quick amounts plus
+ * one large one, so a customer planning a big recharge sees its price too.
+ */
+export const PRICE_BOARD_USD = [...QUICK_AMOUNTS_USD, 500] as const;
+
+/**
  * The slice of the platform settings a quote depends on. `settingsUpdatedAt`
  * is an ISO string rather than a Date so the snapshot can cross the RSC
  * boundary untouched and come back verbatim with the order request.
@@ -61,6 +67,12 @@ export type QuoteInput = {
   usdCents: number;
   method: PaymentMethod;
   settings: QuoteSettings;
+  /**
+   * `false` computes the total even above the 75 000 HTG wallet ceiling —
+   * for the price board, which shows what a large amount costs and says it
+   * is over the ceiling. Every order path keeps the default, `true`.
+   */
+  enforceWalletLimit?: boolean;
 };
 
 /**
@@ -116,7 +128,7 @@ function lineAmount(rule: FeeRule, baseHtg: number, subtotalHtg: number, fxRateH
  * (`above_maximum`), and a total above the 75 000 HTG wallet ceiling
  * (`wallet_limit`). Invariant on success: `baseHtg + Σ lines = totalHtg`.
  */
-export function computeQuote({ usdCents, method, settings }: QuoteInput): QuoteResult {
+export function computeQuote({ usdCents, method, settings, enforceWalletLimit = true }: QuoteInput): QuoteResult {
   if (!Number.isInteger(usdCents) || usdCents <= 0) return { ok: false, error: 'bad_amount' };
   const rateE4 = rateToE4(settings.fxRateHtg);
   if (rateE4 <= 0) return { ok: false, error: 'bad_amount' };
@@ -146,7 +158,7 @@ export function computeQuote({ usdCents, method, settings }: QuoteInput): QuoteR
   }
 
   const totalHtg = baseHtg + feesHtg;
-  if (totalHtg > HTG_WALLET_MAX) return { ok: false, error: 'wallet_limit' };
+  if (enforceWalletLimit && totalHtg > HTG_WALLET_MAX) return { ok: false, error: 'wallet_limit' };
 
   return {
     ok: true,

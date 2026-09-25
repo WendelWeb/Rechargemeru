@@ -3,8 +3,7 @@ import { ChevronDown, Search } from 'lucide-react';
 import { buttonClasses } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Select } from '@/components/ui/Select';
-import { statusLabelFr } from '@/lib/orders/transitions';
-import { ORDER_STATUSES, PAYMENT_METHODS } from '@/lib/orders/types';
+import { PAYMENT_METHODS } from '@/lib/orders/types';
 import { METHOD_LABELS } from '@/components/ui/MethodBadge';
 import type { AdminOrderFilters } from '@/lib/admin/queries';
 
@@ -13,117 +12,103 @@ const MODE_LABELS = [
   { value: 'sandbox', label: 'Tests' },
 ] as const;
 
-export type OrderFiltersProps = { filters: AdminOrderFilters };
+export type OrderFiltersProps = {
+  filters: AdminOrderFilters;
+  /** The ticked status chips, carried through a search as `?status=…`. */
+  statusParam: string;
+};
 
-/** True when anything beyond the search box is narrowing the list. */
+/** True when anything in the folded part is narrowing the list. */
 function hasNarrowing(filters: AdminOrderFilters): boolean {
-  return (
-    filters.status !== 'all' ||
-    filters.method !== 'all' ||
-    filters.mode !== 'all' ||
-    filters.fromDay !== '' ||
-    filters.toDay !== ''
-  );
+  return filters.method !== 'all' || filters.mode !== 'all' || filters.fromDay !== '' || filters.toDay !== '';
 }
 
 /**
- * A plain `GET` form: the filters live in the URL, so a filtered list can be
- * bookmarked, shared and reloaded, and the page works with JavaScript off —
- * which matters on the phone the operator actually uses.
+ * The search bar of `/admin/commandes`: a plain `GET` form, so a filtered
+ * list can be bookmarked, shared and reloaded, and the page works with
+ * JavaScript off.
  *
- * Search is the whole form, nine times out of ten: the operator opens this
- * page holding a reference a customer just sent on WhatsApp. So search and
- * its button stay out in the open and the four other controls fold away —
- * they were 380px of form standing between the page and its first result on
- * a phone. The fold opens by itself whenever one of them is actually set, so
- * a narrowed list never looks like a complete one.
- *
- * `page` is deliberately absent: changing a filter starts again at page 1.
+ * Search is the whole form, nine times out of ten — the operator opens this
+ * page holding a reference a customer just sent on WhatsApp — so it is one
+ * wide field with its button. The wallet, test/real and date filters fold
+ * away and open by themselves when one of them is set, so a narrowed list
+ * never looks like a complete one. The status lives in the chips below.
  */
-export function OrderFilters({ filters }: OrderFiltersProps) {
+export function OrderFilters({ filters, statusParam }: OrderFiltersProps) {
   const labelClass = 'mb-1 block text-xs font-medium text-ink-soft';
   const narrowed = hasNarrowing(filters);
+  const anything = narrowed || filters.q !== '' || statusParam !== '';
 
   return (
-    <form
-      method="get"
-      className="rounded-card border border-line bg-paper p-4 shadow-card"
-      aria-label="Filtrer les commandes"
-    >
-      <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:gap-3">
-        <div className="min-w-0 flex-1">
-          <label className={labelClass} htmlFor="filter-q">
-            Recherche
+    <form method="get" aria-label="Rechercher une commande">
+      {statusParam ? <input type="hidden" name="status" value={statusParam} /> : null}
+      <div className="flex gap-2">
+        <div className="relative min-w-0 flex-1">
+          <label htmlFor="filter-q" className="sr-only">
+            Rechercher
           </label>
+          <Search
+            className="pointer-events-none absolute top-1/2 left-3.5 size-5 -translate-y-1/2 text-ink-muted"
+            aria-hidden="true"
+          />
           <Input
             id="filter-q"
             name="q"
             type="search"
             defaultValue={filters.q}
-            placeholder="Référence, téléphone, compte Meru, nom"
+            placeholder="Référence, téléphone, compte Meru ou nom"
             autoComplete="off"
             enterKeyHint="search"
+            className="min-h-12 rounded-2xl pl-11 shadow-card"
           />
         </div>
-        <button type="submit" className={buttonClasses('dark', 'md', 'w-full sm:w-auto')}>
-          <Search className="size-4" aria-hidden="true" />
-          Filtrer
+        <button type="submit" className={buttonClasses('dark', 'md', 'min-h-12 shrink-0 rounded-2xl')}>
+          Rechercher
         </button>
       </div>
 
-      <details open={narrowed} className="group mt-3">
-        <summary className="inline-flex min-h-tap cursor-pointer list-none items-center gap-1.5 text-sm font-medium text-ink [&::-webkit-details-marker]:hidden">
-          Plus de filtres
-          {narrowed ? <span className="font-normal text-ink-soft">· actifs</span> : null}
-          <ChevronDown className="size-4 text-ink-soft transition-transform group-open:rotate-180" aria-hidden="true" />
-        </summary>
+      <div className="mt-2 flex flex-wrap items-center gap-x-4">
+        <details open={narrowed} className="group w-full">
+          <summary className="inline-flex min-h-tap cursor-pointer list-none items-center gap-1.5 text-sm font-medium text-ink [&::-webkit-details-marker]:hidden">
+            Plus de filtres
+            {narrowed ? <span className="font-normal text-ink-soft">(actifs)</span> : null}
+            <ChevronDown
+              className="size-4 text-ink-soft transition-transform duration-300 group-open:rotate-180"
+              aria-hidden="true"
+            />
+          </summary>
 
-        <div className="mt-2 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-          <div>
-            <label className={labelClass} htmlFor="filter-status">
-              Statut
-            </label>
-            <Select id="filter-status" name="status" defaultValue={filters.status}>
-              <option value="all">Tous</option>
-              {ORDER_STATUSES.map((status) => (
-                <option key={status} value={status}>
-                  {statusLabelFr(status)}
-                </option>
-              ))}
-            </Select>
-          </div>
+          <div className="mt-1 grid animate-drop gap-3 rounded-2xl border border-line bg-paper p-4 sm:grid-cols-2 lg:grid-cols-4">
+            <div>
+              <label className={labelClass} htmlFor="filter-method">
+                Paiement
+              </label>
+              <Select id="filter-method" name="method" defaultValue={filters.method}>
+                <option value="all">MonCash et NatCash</option>
+                {PAYMENT_METHODS.map((method) => (
+                  <option key={method} value={method}>
+                    {METHOD_LABELS[method]}
+                  </option>
+                ))}
+              </Select>
+            </div>
 
-          <div>
-            <label className={labelClass} htmlFor="filter-method">
-              Méthode
-            </label>
-            <Select id="filter-method" name="method" defaultValue={filters.method}>
-              <option value="all">Toutes</option>
-              {PAYMENT_METHODS.map((method) => (
-                <option key={method} value={method}>
-                  {METHOD_LABELS[method]}
-                </option>
-              ))}
-            </Select>
-          </div>
+            <div>
+              <label className={labelClass} htmlFor="filter-mode">
+                Réelles ou tests
+              </label>
+              <Select id="filter-mode" name="mode" defaultValue={filters.mode}>
+                <option value="all">Toutes</option>
+                {MODE_LABELS.map((mode) => (
+                  <option key={mode.value} value={mode.value}>
+                    {mode.label}
+                  </option>
+                ))}
+              </Select>
+            </div>
 
-          <div>
-            <label className={labelClass} htmlFor="filter-mode">
-              Mode
-            </label>
-            <Select id="filter-mode" name="mode" defaultValue={filters.mode}>
-              <option value="all">Tous</option>
-              {MODE_LABELS.map((mode) => (
-                <option key={mode.value} value={mode.value}>
-                  {mode.label}
-                </option>
-              ))}
-            </Select>
-          </div>
-
-          {/* Two native date pickers side by side leave 124px each at 360px,
-              which the browser truncates: they stack until there is room. */}
-          <div className="grid gap-3 sm:grid-cols-2">
+            {/* Two native date pickers side by side leave 124px each at 360px,
+                which the browser truncates: they stack until there is room. */}
             <div>
               <label className={labelClass} htmlFor="filter-from">
                 Du
@@ -136,16 +121,21 @@ export function OrderFilters({ filters }: OrderFiltersProps) {
               </label>
               <Input id="filter-to" name="to" type="date" defaultValue={filters.toDay} />
             </div>
+            <p className="text-xs text-ink-muted sm:col-span-2 lg:col-span-4">
+              Journées d’Haïti, bornes incluses. Appuyez sur « Rechercher » pour appliquer.
+            </p>
           </div>
-        </div>
-      </details>
-
-      <div className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-2">
-        <Link href="/admin/commandes" className={buttonClasses('ghost', 'sm')}>
-          Réinitialiser
-        </Link>
-        <p className="text-xs text-ink-muted">Les dates sont des journées d’Haïti (Port-au-Prince), bornes incluses.</p>
+        </details>
       </div>
+
+      {anything ? (
+        <Link
+          href="/admin/commandes"
+          className="inline-flex min-h-tap items-center text-sm font-medium text-ink-soft underline decoration-line-strong underline-offset-4 hover:text-ink hover:decoration-ink"
+        >
+          Tout effacer
+        </Link>
+      ) : null}
     </form>
   );
 }

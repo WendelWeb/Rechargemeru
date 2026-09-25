@@ -4,7 +4,6 @@ import { useActionState, useState, useTransition, type ReactNode } from 'react';
 import { Ban, BellRing, ChevronDown, NotebookPen, RefreshCw, RotateCcw, UserRoundCog, XCircle } from 'lucide-react';
 import { Alert } from '@/components/ui/Alert';
 import { Button } from '@/components/ui/Button';
-import { CardTitle } from '@/components/ui/Card';
 import { Input } from '@/components/ui/Input';
 import { Select } from '@/components/ui/Select';
 import {
@@ -141,12 +140,12 @@ export function OrderActions({
   const canCorrect = status !== 'fulfilled';
 
   return (
-    <section aria-labelledby="actions-title" className="rounded-card border border-line bg-paper p-4 shadow-card sm:p-6">
-      <CardTitle as="h2" className="mb-4">
-        <span id="actions-title">Actions</span>
-      </CardTitle>
+    <section aria-labelledby="actions-title" className="rounded-card border border-line bg-paper p-4 shadow-card sm:p-5">
+      <h2 id="actions-title" className="mb-3 font-display text-base font-semibold tracking-tight text-ink">
+        Autres actions
+      </h2>
 
-      <div className="flex flex-col gap-3 sm:flex-row">
+      <div className="flex flex-col gap-3 sm:flex-row lg:flex-col">
         <ActionButton
           label="Re-vérifier le paiement"
           busyLabel="Vérification…"

@@ -1,8 +1,8 @@
 /**
  * lib/rate-limit.ts — shared in-memory sliding-window rate limiter guarding
  * every surface an anonymous caller can reach: order creation (by IP and by
- * phone), the recheck action, the payment-return routes, order tracking and
- * the admin login.
+ * phone), the recheck action, the payment-return routes, order tracking, the
+ * admin login and the visit beacon.
  *
  * HONEST LIMITATION, on purpose: this is IN-MEMORY and PER-INSTANCE. On a
  * serverless deploy every instance keeps its own window and a cold start
@@ -53,6 +53,12 @@ export const RATE_LIMITS = {
   track: { max: 20, windowMs: 300_000 },
   /** `POST /admin/login` per IP — the persistent account lock is the hard limit. */
   login: { max: 10, windowMs: 900_000 },
+  /**
+   * `POST /api/visit` per IP — one beacon per page shown, so a whole school or
+   * cybercafé behind one CGNAT address browsing at once must fit; past it the
+   * view is simply not recorded (the visitor never notices).
+   */
+  visit: { max: 120, windowMs: 600_000 },
 } as const satisfies Record<string, RateWindow>;
 
 /**

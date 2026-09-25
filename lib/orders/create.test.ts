@@ -45,4 +45,10 @@ describe('createOrderSchema', () => {
     expect(parsed.success).toBe(true);
     expect(parsed.data).not.toHaveProperty('clerkUserId');
   });
+
+  it('drops a device id the request tried to dictate (it comes from the rm_device cookie)', () => {
+    const parsed = createOrderSchema.safeParse({ ...BODY, deviceId: '3f2b8c1e-9a4d-4e7f-8b21-0c5d6e7f8a9b' });
+    expect(parsed.success).toBe(true);
+    expect(parsed.data).not.toHaveProperty('deviceId');
+  });
 });

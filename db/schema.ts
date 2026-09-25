@@ -12,6 +12,7 @@ import {
   uuid,
   type AnyPgColumn,
 } from 'drizzle-orm/pg-core';
+import type { DeviceKind } from '@/lib/analytics/visitor';
 import type {
   Actor,
   GatewayMode,
@@ -128,6 +129,12 @@ export const orders = pgTable(
     // the other is where this customer asked to be written. Notifications go
     // to both, de-duplicated.
     accountEmail: text('account_email'),
+    // The `rm_device` cookie of the browser that created the order (see
+    // `page_views`), read server-side by `POST /api/orders` and never from the
+    // body; null when the browser had none (cookies off, no visit recorded
+    // yet, or an order older than the visitor analytics). It only answers
+    // « which visitors went on to order » — it proves nothing about who paid.
+    deviceId: text('device_id'),
     customerName: text('customer_name').notNull(),
     // E.164, e.g. +50937001234.
     customerPhone: text('customer_phone').notNull(),
@@ -157,6 +164,7 @@ export const orders = pgTable(
     index('orders_phone_idx').on(t.customerPhone),
     index('orders_mode_idx').on(t.mode),
     index('orders_clerk_user_idx').on(t.clerkUserId),
+    index('orders_device_idx').on(t.deviceId),
   ],
 );
 
@@ -231,4 +239,46 @@ export const webhookLogs = pgTable(
     receivedAt: tz('received_at').notNull().defaultNow(),
   },
   (t) => [index('webhook_logs_order_idx').on(t.orderId), index('webhook_logs_received_idx').on(t.receivedAt)],
+);
+
+/**
+ * One row per page shown on the public site, sent by the browser itself
+ * (`components/site/VisitBeacon.tsx` → `POST /api/visit`), so bots that run
+ * no JavaScript never appear and a visitor needs no account to be counted.
+ *
+ * Nothing here identifies a person: `deviceId` is a random UUID the site
+ * stored in a first-party cookie (`rm_device`, 400 days), `visitId` a random
+ * id in a rolling 30-minute cookie (`rm_visit`) — one visit is every page
+ * seen without a pause of half an hour. No IP address, no full user-agent,
+ * no query string: only the pathname, the referring site's host name, the
+ * `utm_source` tag, a short device label and Vercel's country / city guess.
+ * Written append-only and never updated.
+ */
+export const pageViews = pgTable(
+  'page_views',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    deviceId: text('device_id').notNull(),
+    visitId: text('visit_id').notNull(),
+    // Pathname only (no `?…`, no `#…`), at most 200 characters.
+    path: text('path').notNull(),
+    locale: text('locale').$type<Locale>(),
+    // Lower-cased host of an outside referrer, `www.` / `m.` / `l.` stripped;
+    // null for a direct visit or a page reached from this very site.
+    referrerHost: text('referrer_host'),
+    // `utm_source`, lower-cased, at most 60 characters.
+    utmSource: text('utm_source'),
+    deviceKind: text('device_kind').$type<DeviceKind>().notNull(),
+    // « Android · Chrome », « iPhone · Safari », « Windows · Edge »…
+    deviceLabel: text('device_label'),
+    // ISO 3166-1 alpha-2 from `x-vercel-ip-country`.
+    country: text('country'),
+    // Decoded from `x-vercel-ip-city` (which arrives URI-encoded).
+    city: text('city'),
+    createdAt: tz('created_at').notNull().defaultNow(),
+  },
+  (t) => [
+    index('page_views_created_idx').on(t.createdAt),
+    index('page_views_device_created_idx').on(t.deviceId, t.createdAt),
+  ],
 );

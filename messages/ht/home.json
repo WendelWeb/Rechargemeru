@@ -4,11 +4,12 @@
     "description": "Peye an goud ak MonCash oswa NatCash epi resevwa dola US sou kont Meru ou. Frè yo parèt anvan ou peye, ou ka swiv kòmand ou ak referans li, epi gen yon sipò WhatsApp."
   },
   "hero": {
-    "title": "Peye an goud, resevwa dola sou Meru.",
+    "title": "Rechaje kont Meru ou.",
     "lead": "Chwazi yon montan, peye ak MonCash oswa NatCash, epi nou voye dola yo sou kont Meru ou. Total la an goud parèt anvan ou peye, san sipriz.",
     "price": "{usd} = {total}, ak tout frè",
     "rateNote": "To echanj : {rate}",
-    "rate": "To jodi a : {rate}"
+    "rate": "To jodi a : {rate}",
+    "sub": "Peye an goud ak MonCash oswa NatCash. Resevwa dola US sou Meru."
   },
   "resume": {
     "title": "Kontinye dènye kòmand mwen an",
@@ -18,13 +19,13 @@
   "widget": {
     "title": "Rechaj ou",
     "amount": {
-      "title": "Konbyen dola US ou vle rechaje ?",
+      "title": "Konbyen dola ou vle resevwa ?",
       "label": "Montan an dola US",
-      "hint": "Ant {min} ak {max}.",
+      "hint": "Depi {min} rive {max}.",
       "quickHint": "Montan rapid, an dola US"
     },
     "method": {
-      "title": "Kijan ou vle peye ?",
+      "title": "Peye ak",
       "none": "Pa gen okenn mwayen peman disponib kounye a. Eseye ankò nan kèk minit oswa ekri nou sou WhatsApp.",
       "sandbox": "{method} nan mòd tès : peman an ap senp senple epi nou p ap voye okenn dola."
     },
@@ -53,11 +54,10 @@
       "phonePlaceholder": "3700 1234",
       "email": "Imel",
       "optional": "si ou vle",
-      "emailHint": "Pou resevwa konfimasyon an pa imel tou.",
-      "emailToggle": "Resevwa konfimasyon an pa imel tou",
+      "emailHint": "N ap voye konfimasyon kòmand ou a la.",
       "emailPlaceholder": "ou@mail.com"
     },
-    "continue": "Verifye epi kontinye",
+    "continue": "Kontinye",
     "account": {
       "signedIn": "Ou konekte kòm {account} — se nan kont ou n ap anrejistre kòmand sa a.",
       "guest": "Ou ka kòmande san kont. Lè w gen yon kont, ou jwenn tout kòmand ou yo yon sèl kote.",
@@ -73,6 +73,25 @@
       },
       "phone": "Mete yon nimewo WhatsApp ki valab : 8 chif pou Ayiti, oswa +1 ak 10 chif.",
       "email": "Mete yon imel ki valab oswa kite kaz la vid."
+    },
+    "steps": {
+      "amount": "Montan",
+      "details": "Enfòmasyon",
+      "confirm": "Verifye"
+    },
+    "stepOf": "Etap {current} sou {total}",
+    "back": "Retounen",
+    "price": {
+      "show": "Wè detay pri a",
+      "hide": "Kache detay la"
+    },
+    "total": {
+      "label": "Ou peye",
+      "note": "Tout frè konpri. Ou resevwa {usd} sou Meru."
+    },
+    "recap": {
+      "label": "Rechaj ou, peye ak {method}",
+      "edit": "Chanje"
     }
   },
   "receipt": {
@@ -95,7 +114,7 @@
     "whatsapp": "WhatsApp",
     "email": "Imel",
     "edit": "Korije",
-    "submit": "Konfime kòmand lan",
+    "submit": "Konfime epi peye",
     "submitting": "N ap kreye kòmand lan…",
     "changed": {
       "title": "To a chanje",
@@ -144,25 +163,44 @@
     "title": "Kijan sa mache",
     "steps": {
       "amount": {
-        "title": "Chwazi yon montan",
-        "body": "Depi {min} rive {max}. Total la an goud, ak tout frè yo, parèt lamenm."
-      },
-      "account": {
-        "title": "Bay kont Meru ou",
-        "body": "Imel oswa non itilizatè kont Meru ou, ansanm ak nimewo WhatsApp ou."
+        "title": "Chwazi montan an",
+        "body": "Pri a an goud parèt touswit, ak tout frè."
       },
       "pay": {
         "title": "Peye ak MonCash oswa NatCash",
-        "body": "Ou pase nan bous mobil ou pou peye an goud, epi ou tounen isit la."
+        "body": "Sou telefòn ou, jan ou konn fè a."
       },
       "receive": {
-        "title": "Resevwa dola ou yo",
-        "body": "Depi peman an verifye, nou voye dola yo sou kont Meru ou, anjeneral nan {sla}."
+        "title": "Resevwa dola ou sou Meru",
+        "body": "Anjeneral nan {sla}. N ap prevni w sou WhatsApp."
       }
     }
   },
   "trust": {
     "title": "Poukisa ou ka fè nou konfyans",
     "operator": "Se yon vrè moun an Ayiti ki opere sèvis la, ou ka jwenn li sou WhatsApp ({hours})."
+  },
+  "facts": {
+    "fees": "Ou wè pri total la anvan ou peye.",
+    "verified": "Nou verifye chak peman ak MonCash oswa NatCash.",
+    "person": "Se yon vrè moun k ap reponn ou sou WhatsApp."
+  },
+  "prices": {
+    "title": "Pri jodi a",
+    "sub": "To echanj ak frè konpri : se sa ou peye.",
+    "receive": "Ou resevwa",
+    "pay": "Ou peye",
+    "rate": "To echanj : {rate}",
+    "updated": "Pri yo mete ajou {date}.",
+    "overLimit": "Plis pase {limit}, yon sèl peman MonCash oswa NatCash pa ase : ekri nou sou WhatsApp."
+  },
+  "support": {
+    "title": "Ou gen yon kesyon ? Se yon vrè moun k ap reponn ou.",
+    "body": "Ekri nou sou WhatsApp, {hours}. Kenbe referans kòmand ou a sou lamen.",
+    "cta": "Ekri sou WhatsApp"
+  },
+  "trackLink": {
+    "lead": "Ou gentan gen yon kòmand ?",
+    "cta": "Swiv li"
   }
 }

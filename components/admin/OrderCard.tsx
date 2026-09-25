@@ -1,113 +1,98 @@
 import Link from 'next/link';
-import { ArrowRight, ChevronRight } from 'lucide-react';
-import { buttonClasses } from '@/components/ui/Button';
+import { ArrowRight } from 'lucide-react';
 import { cn } from '@/lib/cn';
 import { Chip } from '@/components/ui/Chip';
 import { MethodBadge } from '@/components/ui/MethodBadge';
-import { StatusPill } from '@/components/ui/StatusPill';
-import { formatDateTime, formatHtg, formatUsd } from '@/lib/format';
-import { statusLabelFr } from '@/lib/orders/transitions';
-import type { OrderRow } from '@/lib/orders/types';
-import type { WhatsAppMessage } from '@/lib/admin/whatsapp-messages';
 import { WhatsAppMenu } from '@/components/admin/WhatsAppMenu';
+import type { WhatsAppMessage } from '@/lib/admin/whatsapp-messages';
+import { formatHtg, formatUsd } from '@/lib/format';
+import type { OrderRow } from '@/lib/orders/types';
 
 export type OrderCardProps = {
   order: OrderRow;
-  /** Turns the card into a call to action (« Recharger » on the dashboard queue). */
-  cta?: string;
+  /** « Payée il y a 5 min » — computed by the page, which owns the clock. */
+  moment: string;
   /**
    * Les messages WhatsApp proposés pour cette commande. Fournis, ils ajoutent
-   * un bouton qui écrit au client sans quitter la liste — la réponse la plus
-   * fréquente à ce qu'on lit sur une carte est justement d'écrire à la
-   * personne. Absents ou vides (commande de test), la carte reste un simple
-   * lien, comme avant.
+   * un bouton qui écrit au client sans quitter le tableau de bord. Absents ou
+   * vides (commande de test), la carte reste un simple lien.
    */
   whatsappMessages?: WhatsAppMessage[];
 };
 
 /**
- * One order, as the operator reads it on a phone.
+ * A paid order, as the operator's next job: the dollars to send in large
+ * type, where they go (the Meru identifier, whole — it is what gets typed
+ * into Meru), and one button that says what happens next.
  *
- * Deliberately not a table row: six columns in 328 px push the amount and the
- * status off screen, and those two are exactly what is being looked for. Here
- * the reference, the name, the dollars and the gourdes are on the first line
- * of sight, and the state of the order is a pill underneath.
- *
- * The whole card is the link, so the tap target is the card itself — nothing
- * inside it competes for the thumb, and a mis-tap still opens the right order.
+ * The whole card is the link. It lifts under the pointer and its button
+ * darkens, so it reads as clickable before anything is clicked; a mis-tap
+ * anywhere on it still opens the right order.
  */
-export function OrderCard({ order, cta, whatsappMessages = [] }: OrderCardProps) {
-  const when = order.paidAt
-    ? `Payée le ${formatDateTime(order.paidAt)}`
-    : `Créée le ${formatDateTime(order.createdAt)}`;
+export function OrderCard({ order, moment, whatsappMessages = [] }: OrderCardProps) {
+  const review = order.status === 'needs_review';
+  const hasWhatsapp = whatsappMessages.length > 0;
 
   return (
     <li className="relative">
       <Link
         href={`/admin/commandes/${order.id}`}
-        className="block rounded-card border border-line bg-paper p-4 shadow-card transition-colors hover:border-ink-muted"
+        className="group block h-full rounded-card border border-line bg-paper p-4 shadow-card transition-[transform,box-shadow,border-color] duration-200 ease-out hover:-translate-y-0.5 hover:border-line-strong/60 hover:shadow-hover sm:p-5"
       >
-        <div className={cn('flex items-start justify-between gap-3', whatsappMessages.length > 0 && 'pr-12')}>
-          <div className="min-w-0">
-            <p className="font-display text-[15px] font-semibold tracking-wide tnum text-ink">{order.reference}</p>
-            <p className="mt-1 truncate text-[15px] leading-snug font-medium text-ink">{order.customerName}</p>
-            <p className="truncate text-xs text-ink-muted">{order.meruAccount}</p>
-          </div>
-          <div className="shrink-0 text-right">
-            <p className="font-display text-xl leading-none font-semibold tnum text-ink">
-              {formatUsd(order.usdCents, 'fr')}
-            </p>
-            <p className="mt-1 text-xs tnum text-ink-soft">
-              {order.paidHtg === null ? 'devis ' : 'reçu '}
-              {formatHtg(order.paidHtg ?? order.totalHtg)}
-            </p>
-          </div>
-        </div>
-
-        <div className="mt-3 flex flex-wrap items-center gap-2">
-          <StatusPill status={order.status} label={statusLabelFr(order.status)} size="sm" />
-          <MethodBadge method={order.method} size="sm" />
+        <div className={cn('flex items-center gap-2', hasWhatsapp && 'pr-12')}>
+          <span
+            aria-hidden="true"
+            className={cn(
+              'size-2 shrink-0 rounded-full',
+              review ? 'bg-coral' : 'bg-sun-deep',
+              order.mode === 'live' && 'animate-beat',
+            )}
+          />
+          <span className="font-display text-sm font-semibold tracking-wide tnum text-ink">{order.reference}</span>
           {order.mode === 'sandbox' ? <Chip tone="test">TEST</Chip> : null}
         </div>
+        <p className="mt-0.5 pl-4 text-xs text-ink-muted">{review ? `À vérifier · ${moment.toLowerCase()}` : moment}</p>
+
+        <p className="mt-4 font-display text-[2rem] leading-none font-bold tracking-tight tnum text-ink">
+          {formatUsd(order.usdCents, 'fr')}
+        </p>
+        <p className="mt-2 text-xs text-ink-soft">vers</p>
+        <p className="font-display text-base leading-snug font-semibold break-all text-ink">{order.meruAccount}</p>
+
+        <p className="mt-3 truncate text-sm font-medium text-ink">{order.customerName}</p>
+        <p className="mt-0.5 flex flex-wrap items-center gap-x-2 text-sm text-ink-soft">
+          <MethodBadge method={order.method} size="sm" className="font-medium" />
+          <span aria-hidden="true">·</span>
+          <span className="tnum">
+            {order.paidHtg === null ? 'montant non communiqué' : `${formatHtg(order.paidHtg)} reçues`}
+          </span>
+        </p>
 
         {order.failureReason ? (
-          <p className="mt-2 text-sm leading-snug text-coral-deep">{order.failureReason}</p>
+          <p className="mt-2 line-clamp-2 text-sm leading-snug text-coral-deep">{order.failureReason}</p>
         ) : null}
 
-        <div className="mt-3 flex items-center justify-between gap-3 border-t border-line pt-3">
-          <span className="min-w-0 text-xs text-ink-muted">{when}</span>
-          {cta ? (
-            <span className={buttonClasses('primary', 'sm', 'shrink-0')}>
-              {cta}
-              <ArrowRight className="size-4" aria-hidden="true" />
-            </span>
-          ) : (
-            <span className="inline-flex shrink-0 items-center gap-0.5 text-sm font-medium text-ink">
-              Ouvrir
-              <ChevronRight className="size-4" aria-hidden="true" />
-            </span>
+        <span
+          className={cn(
+            'mt-4 flex min-h-11 items-center justify-center gap-2 rounded-xl text-[15px] font-semibold transition-colors duration-200',
+            review ? 'bg-ink text-paper group-hover:bg-ink-hover' : 'bg-sun text-ink group-hover:bg-sun-deep',
           )}
-        </div>
+        >
+          {review ? 'Vérifier' : 'Recharger'}
+          <ArrowRight className="size-4 transition-transform duration-200 group-hover:translate-x-0.5" aria-hidden="true" />
+        </span>
       </Link>
 
-      {/*
-        Hors du lien, jamais dedans : un bouton à l'intérieur d'une ancre est
-        un piège au clavier et, au doigt, une cible qui vole le tap destiné à
-        la carte. Il est donc posé au-dessus du coin haut droit, là où aucune
-        information ne vit.
-      */}
-      {whatsappMessages.length > 0 ? (
-        <div className="pointer-events-none absolute top-3 right-3">
-          <div className="pointer-events-auto">
-            <WhatsAppMenu
-              orderId={order.id}
-              reference={order.reference}
-              customerName={order.customerName}
-              customerPhone={order.customerPhone}
-              messages={whatsappMessages}
-              variant="compact"
-            />
-          </div>
+      {hasWhatsapp ? (
+        <div className="absolute top-3 right-3 sm:top-4 sm:right-4">
+          <WhatsAppMenu
+            orderId={order.id}
+            reference={order.reference}
+            customerName={order.customerName}
+            customerPhone={order.customerPhone}
+            messages={whatsappMessages}
+            variant="compact"
+          />
         </div>
       ) : null}
     </li>

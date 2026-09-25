@@ -9,6 +9,7 @@ import { getSettings } from '@/lib/settings/store';
 import { SiteHeader } from '@/components/site/SiteHeader';
 import { SiteFooter } from '@/components/site/SiteFooter';
 import { SandboxBanner } from '@/components/site/SandboxBanner';
+import { VisitBeacon } from '@/components/site/VisitBeacon';
 
 export const dynamic = 'force-dynamic';
 
@@ -59,6 +60,8 @@ export default async function LocaleLayout({ children, params }: LocaleLayoutPro
         {children}
       </main>
       <SiteFooter businessName={settings.businessName} supportWhatsapp={settings.supportWhatsapp} />
+      {/* Counts the visit (anonymous device cookie, no account needed) for /admin/visites. */}
+      <VisitBeacon locale={locale} />
     </NextIntlClientProvider>
   );
 }

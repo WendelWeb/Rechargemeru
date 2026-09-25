@@ -4,11 +4,12 @@
     "description": "Payez en gourdes avec MonCash ou NatCash et recevez des dollars US sur votre compte Meru. Frais affichés avant de payer, suivi par référence, support WhatsApp."
   },
   "hero": {
-    "title": "Payez en gourdes, recevez des dollars sur Meru.",
+    "title": "Rechargez votre compte Meru.",
     "lead": "Choisissez un montant, payez avec MonCash ou NatCash, et nous envoyons les dollars sur votre compte Meru. Le total en gourdes s'affiche avant de payer, sans surprise.",
     "price": "{usd} = {total}, tout compris",
     "rateNote": "Taux de change : {rate}",
-    "rate": "Taux du jour : {rate}"
+    "rate": "Taux du jour : {rate}",
+    "sub": "Payez en gourdes avec MonCash ou NatCash. Recevez des dollars US sur Meru."
   },
   "resume": {
     "title": "Reprendre ma dernière commande",
@@ -18,13 +19,13 @@
   "widget": {
     "title": "Votre recharge",
     "amount": {
-      "title": "Combien voulez-vous recharger, en dollars US ?",
+      "title": "Combien de dollars voulez-vous recevoir ?",
       "label": "Montant en dollars US",
-      "hint": "Entre {min} et {max}.",
+      "hint": "De {min} à {max}.",
       "quickHint": "Montants rapides, en dollars US"
     },
     "method": {
-      "title": "Comment voulez-vous payer ?",
+      "title": "Payer avec",
       "none": "Aucun moyen de paiement n'est disponible pour le moment. Réessayez dans quelques minutes ou écrivez-nous sur WhatsApp.",
       "sandbox": "{method} est en mode test : le paiement sera simulé et aucun dollar ne sera envoyé."
     },
@@ -53,11 +54,10 @@
       "phonePlaceholder": "3700 1234",
       "email": "Email",
       "optional": "facultatif",
-      "emailHint": "Pour recevoir aussi la confirmation par email.",
-      "emailToggle": "Recevoir aussi la confirmation par email",
+      "emailHint": "Nous y envoyons la confirmation de votre commande.",
       "emailPlaceholder": "vous@mail.com"
     },
-    "continue": "Vérifier et continuer",
+    "continue": "Continuer",
     "account": {
       "signedIn": "Connecté comme {account} — cette commande sera enregistrée dans votre compte.",
       "guest": "Vous pouvez commander sans compte. Créer un compte permet de retrouver vos commandes.",
@@ -73,6 +73,25 @@
       },
       "phone": "Entrez un numéro WhatsApp valide : 8 chiffres pour Haïti, ou +1 suivi de 10 chiffres.",
       "email": "Entrez un email valide ou laissez le champ vide."
+    },
+    "steps": {
+      "amount": "Montant",
+      "details": "Vos infos",
+      "confirm": "Vérifier"
+    },
+    "stepOf": "Étape {current} sur {total}",
+    "back": "Retour",
+    "price": {
+      "show": "Voir le détail du prix",
+      "hide": "Masquer le détail"
+    },
+    "total": {
+      "label": "Vous payez",
+      "note": "Frais compris. Vous recevez {usd} sur Meru."
+    },
+    "recap": {
+      "label": "Votre recharge, payée avec {method}",
+      "edit": "Modifier"
     }
   },
   "receipt": {
@@ -95,7 +114,7 @@
     "whatsapp": "WhatsApp",
     "email": "Email",
     "edit": "Corriger",
-    "submit": "Confirmer la commande",
+    "submit": "Confirmer et payer",
     "submitting": "Création de la commande…",
     "changed": {
       "title": "Le taux a changé",
@@ -144,25 +163,44 @@
     "title": "Comment ça marche",
     "steps": {
       "amount": {
-        "title": "Choisissez un montant",
-        "body": "De {min} à {max}. Le total en gourdes, frais compris, s'affiche tout de suite."
-      },
-      "account": {
-        "title": "Indiquez votre compte Meru",
-        "body": "L'email ou le nom d'utilisateur de votre compte Meru, et votre numéro WhatsApp."
+        "title": "Choisissez le montant",
+        "body": "Le prix en gourdes s’affiche tout de suite, frais compris."
       },
       "pay": {
         "title": "Payez avec MonCash ou NatCash",
-        "body": "Vous passez par votre portefeuille mobile pour payer en gourdes, puis vous revenez ici."
+        "body": "Depuis votre téléphone, comme d’habitude."
       },
       "receive": {
-        "title": "Recevez vos dollars",
-        "body": "Dès que le paiement est vérifié, nous envoyons les dollars sur votre compte Meru, généralement sous {sla}."
+        "title": "Recevez vos dollars sur Meru",
+        "body": "En général en {sla}. Vous êtes prévenu sur WhatsApp."
       }
     }
   },
   "trust": {
     "title": "Pourquoi nous faire confiance",
     "operator": "Un service opéré par une personne réelle en Haïti, joignable sur WhatsApp ({hours})."
+  },
+  "facts": {
+    "fees": "Vous voyez le prix total avant de payer.",
+    "verified": "Chaque paiement est vérifié chez MonCash ou NatCash.",
+    "person": "Une vraie personne répond sur WhatsApp."
+  },
+  "prices": {
+    "title": "Les prix du jour",
+    "sub": "Taux de change et frais compris : c’est ce que vous payez.",
+    "receive": "Vous recevez",
+    "pay": "Vous payez",
+    "rate": "Taux de change : {rate}",
+    "updated": "Prix mis à jour le {date}.",
+    "overLimit": "Au-delà de {limit}, un seul paiement MonCash ou NatCash ne suffit pas : écrivez-nous sur WhatsApp."
+  },
+  "support": {
+    "title": "Une question ? Une vraie personne vous répond.",
+    "body": "Écrivez-nous sur WhatsApp, {hours}. Gardez votre référence de commande sous la main.",
+    "cta": "Écrire sur WhatsApp"
+  },
+  "trackLink": {
+    "lead": "Vous avez déjà une commande ?",
+    "cta": "La suivre"
   }
 }

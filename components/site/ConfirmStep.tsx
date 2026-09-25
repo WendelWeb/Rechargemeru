@@ -1,11 +1,10 @@
-import { Fragment, type ReactNode } from 'react';
+import { Fragment, type ReactNode, type RefObject } from 'react';
 import { useTranslations } from 'next-intl';
 import { formatUsd, type FormatLocale } from '@/lib/format';
 import type { PaymentMethod } from '@/lib/orders/types';
 import type { Quote } from '@/lib/pricing/quote';
 import { Alert } from '@/components/ui/Alert';
 import { Button } from '@/components/ui/Button';
-import { CardTitle } from '@/components/ui/Card';
 import { Chip } from '@/components/ui/Chip';
 import { METHOD_LABELS } from '@/components/ui/MethodBadge';
 import { QuoteReceipt } from './QuoteReceipt';
@@ -19,6 +18,8 @@ import { QuoteReceipt } from './QuoteReceipt';
  * are plain functions.
  */
 export type ConfirmStepProps = {
+  /** Receives the focus when the screen appears (see RechargeWidget). */
+  headingRef?: RefObject<HTMLHeadingElement | null>;
   locale: FormatLocale;
   quote: Quote;
   method: PaymentMethod;
@@ -69,6 +70,7 @@ function SummaryRow({ label, value }: { label: string; value: ReactNode }) {
 }
 
 export function ConfirmStep({
+  headingRef,
   locale,
   quote,
   method,
@@ -89,7 +91,13 @@ export function ConfirmStep({
   return (
     <div className="space-y-5">
       <div className="flex flex-wrap items-center gap-2">
-        <CardTitle as="h2">{t('confirm.title')}</CardTitle>
+        <h2
+          ref={headingRef}
+          tabIndex={-1}
+          className="font-display text-xl leading-tight font-semibold tracking-tight text-ink outline-none sm:text-2xl"
+        >
+          {t('confirm.title')}
+        </h2>
         {sandbox ? <Chip tone="test">{t('created.sandbox')}</Chip> : null}
       </div>
 
@@ -129,7 +137,7 @@ export function ConfirmStep({
 
       <div className="flex flex-col gap-2 sm:flex-row-reverse">
         <Button
-          variant="dark"
+          variant="primary"
           size="lg"
           className="w-full sm:flex-1"
           onClick={onSubmit}

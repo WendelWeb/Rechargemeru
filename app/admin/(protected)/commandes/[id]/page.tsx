@@ -1,8 +1,9 @@
 import type { Metadata } from 'next';
 import type { ReactNode } from 'react';
+import Link from 'next/link';
 import { notFound } from 'next/navigation';
+import { ChevronLeft } from 'lucide-react';
 import { Alert } from '@/components/ui/Alert';
-import { CardTitle } from '@/components/ui/Card';
 import { Chip } from '@/components/ui/Chip';
 import { CopyButton } from '@/components/ui/CopyButton';
 import { MethodBadge } from '@/components/ui/MethodBadge';
@@ -12,18 +13,20 @@ import { NotificationsTable } from '@/components/admin/NotificationsTable';
 import { OrderActions } from '@/components/admin/OrderActions';
 import { OrderTimeline } from '@/components/admin/OrderTimeline';
 import { RawJson } from '@/components/admin/RawJson';
+import { WhatsAppMenu } from '@/components/admin/WhatsAppMenu';
+import { orderMomentFr } from '@/lib/admin/order-status';
 import type { NotificationListItem } from '@/lib/admin/queries';
+import { timeAgoFr } from '@/lib/admin/time';
+import { buildWhatsAppMessages } from '@/lib/admin/whatsapp-messages';
 import { formatDateTime, formatHtg, formatRate, formatUsd } from '@/lib/format';
 import { meruAccountLabelFr } from '@/lib/orders/meru-account';
 import { getOrderById, getOrderEvents, getOrderNotifications } from '@/lib/orders/queries';
 import { isExpired, statusLabelFr } from '@/lib/orders/transitions';
 import type { NotificationRow, OrderRow } from '@/lib/orders/types';
-import { normalizePhone, formatPhone } from '@/lib/phone';
+import { formatPhone, normalizePhone } from '@/lib/phone';
 import { effectiveRateHtg } from '@/lib/pricing/money';
 import { getSettings } from '@/lib/settings/store';
 import { siteUrl } from '@/lib/site-url';
-import { buildWhatsAppMessages } from '@/lib/admin/whatsapp-messages';
-import { WhatsAppMenu } from '@/components/admin/WhatsAppMenu';
 
 export const dynamic = 'force-dynamic';
 
@@ -43,19 +46,17 @@ function waLink(e164: string, text: string): string | null {
 
 function Row({ label, children }: { label: string; children: ReactNode }) {
   return (
-    <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-0.5 border-b border-line py-2 last:border-0">
+    <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-0.5 border-b border-line py-2.5 last:border-0">
       <dt className="text-sm text-ink-soft">{label}</dt>
       <dd className="min-w-0 text-right text-sm break-words text-ink">{children}</dd>
     </div>
   );
 }
 
-function Panel({ title, children }: { title: string; children: ReactNode }) {
+function Panel({ title, children, className }: { title: string; children: ReactNode; className?: string }) {
   return (
-    <section className="rounded-card border border-line bg-paper p-4 shadow-card sm:p-6">
-      <CardTitle as="h2" className="mb-3">
-        {title}
-      </CardTitle>
+    <section className={`rounded-card border border-line bg-paper p-4 shadow-card sm:p-5 ${className ?? ''}`}>
+      <h2 className="mb-2 font-display text-base font-semibold tracking-tight text-ink">{title}</h2>
       {children}
     </section>
   );
@@ -82,6 +83,39 @@ function toListItem(row: NotificationRow, order: OrderRow): NotificationListItem
   };
 }
 
+/** What this order is, in one sentence — the line above the figures. */
+function stateSentence(order: OrderRow, expired: boolean, now: Date): string {
+  switch (order.status) {
+    case 'pending_payment':
+      return expired
+        ? `Délai de paiement dépassé ${timeAgoFr(order.expiresAt, now)}, aucun paiement confirmé.`
+        : `En attente du paiement du client. Le lien expire ${timeAgoFr(order.expiresAt, now)}.`;
+    case 'fulfilled':
+      return `Rechargée ${timeAgoFr(order.fulfilledAt ?? order.updatedAt, now)}.`;
+    case 'expired':
+      return 'Expirée sans paiement confirmé.';
+    case 'failed':
+      return 'Échouée : aucun dollar n’est parti.';
+    case 'cancelled':
+      return 'Annulée avant tout paiement.';
+    case 'refunded':
+      return `Remboursée${order.refundHtg === null ? '' : ` : ${formatHtg(order.refundHtg)}`}${order.refundWallet ? ` sur ${order.refundWallet}` : ''}.`;
+    default:
+      return statusLabelFr(order.status);
+  }
+}
+
+/**
+ * One order, read in the order the operator needs it.
+ *
+ * First the reference and the state, then the one block that matters for
+ * this state: for a paid order, the recharge panel — the name as Meru shows
+ * it, the identifier and the amount to copy, the button — and for any other
+ * order, the figures of what it is and where it stands. Then, on a desk, two
+ * columns: what happened (history, messages sent) on the left, who and how
+ * much (client, price, payment, dates, the other actions) on the right. On a
+ * phone the same blocks stack, client first.
+ */
 export default async function AdminOrderPage({ params }: PageParams) {
   const { id } = await params;
   const order = await getOrderById(id);
@@ -96,7 +130,6 @@ export default async function AdminOrderPage({ params }: PageParams) {
   const now = new Date();
   const expired = isExpired(order, now);
   const actionable = order.status === 'paid' || order.status === 'needs_review';
-  const showFulfilPanel = actionable || order.status === 'fulfilled';
 
   // Tous les messages que l'opérateur peut écrire à ce client, dans SA langue,
   // les plus pertinents pour l'état de la commande en premier. Une commande de
@@ -105,47 +138,99 @@ export default async function AdminOrderPage({ params }: PageParams) {
     siteUrl: siteUrl(),
     businessName: settings.businessName,
   });
-  // Le raccourci du panneau de recharge reste le message de l'étape en cours.
-  const waShortcut = waMessages.find((m) => m.id === (order.status === 'fulfilled' ? 'fulfilled' : 'payment_received'));
+  const waShortcut = waMessages.find((m) => m.id === 'payment_received');
   const whatsappHref = waShortcut ? waLink(order.customerPhone, waShortcut.body) : null;
 
-  const payerWallet = order.payerWallet ? normalizePhone(order.payerWallet) ?? order.payerWallet : null;
+  const payerWallet = order.payerWallet ? (normalizePhone(order.payerWallet) ?? order.payerWallet) : null;
   const payerMismatch = payerWallet !== null && payerWallet !== order.customerPhone;
   const effective = effectiveRateHtg(order.totalHtg, order.usdCents);
 
+  const client = (
+    <Panel title="Client">
+      <p className="font-display text-xl leading-tight font-semibold tracking-tight break-words text-ink">
+        {order.customerName}
+      </p>
+      <p className="mt-0.5 text-xs text-ink-muted">Nom tel qu’il doit apparaître dans Meru</p>
+      <dl className="mt-3">
+        <Row label="WhatsApp">
+          <span className="inline-flex items-center gap-1">
+            <span className="tnum">{formatPhone(order.customerPhone)}</span>
+            <CopyButton value={order.customerPhone} label="Copier le numéro" iconOnly className="border-0" />
+          </span>
+        </Row>
+        <Row label={meruAccountLabelFr(order.meruAccountType)}>
+          <span className="inline-flex items-center gap-1">
+            <span className="font-medium break-all">{order.meruAccount}</span>
+            <CopyButton value={order.meruAccount} label="Copier l’identifiant" iconOnly className="border-0" />
+          </span>
+        </Row>
+        <Row label="Email">{order.customerEmail ? <span className="break-all">{order.customerEmail}</span> : NONE}</Row>
+        {order.accountEmail && order.accountEmail !== order.customerEmail ? (
+          <Row label="Email du compte">
+            <span className="break-all">{order.accountEmail}</span>
+          </Row>
+        ) : null}
+        <Row label="Langue">{order.locale === 'ht' ? 'Kreyòl' : 'Français'}</Row>
+        {/* A guest order says so plainly: « sans compte » is a normal,
+            supported way to order here — not a missing piece of data. */}
+        <Row label="Compte client">{order.clerkUserId ? 'Commande passée depuis un compte' : 'Sans compte'}</Row>
+        {order.adminNote ? <Row label="Votre note">{order.adminNote}</Row> : null}
+      </dl>
+      {waMessages.length > 0 ? (
+        <div className="mt-4">
+          <WhatsAppMenu
+            orderId={order.id}
+            reference={order.reference}
+            customerName={order.customerName}
+            customerPhone={order.customerPhone}
+            messages={waMessages}
+            className="w-full"
+          />
+          <p className="mt-2 text-xs leading-snug text-ink-muted">
+            Déjà rédigé en {order.locale === 'ht' ? 'kreyòl' : 'français'}. Vous relisez dans WhatsApp avant d’envoyer.
+          </p>
+        </div>
+      ) : null}
+    </Panel>
+  );
+
   return (
     <div className="space-y-6">
-      {/*
-        The reference owns the first line, with the button that copies it
-        right beside it; what the order *is* comes underneath. Laid out as one
-        wrapping row, the copy button was pushed to a line of its own by
-        `ml-auto`, alone and right-aligned, away from the value it copies.
-      */}
-      <header className="space-y-2">
-        <div className="flex items-center gap-2">
-          <h1 className="min-w-0 font-display text-2xl leading-tight font-semibold tracking-wide break-all tnum text-ink">
-            {order.reference}
-          </h1>
-          <CopyButton value={order.reference} label="Copier la référence" copiedLabel="Copié" iconOnly className="shrink-0" />
-        </div>
-        <div className="flex flex-wrap items-center gap-2">
-          <StatusPill status={order.status} label={statusLabelFr(order.status)} />
-          <MethodBadge method={order.method} size="sm" />
-          {order.mode === 'sandbox' ? <Chip tone="test">TEST</Chip> : null}
-        </div>
-      </header>
+      <div>
+        <Link
+          href="/admin/commandes"
+          className="-ml-2 inline-flex min-h-tap items-center gap-1 rounded-lg px-2 text-sm font-medium text-ink-soft transition-colors hover:bg-paper hover:text-ink"
+        >
+          <ChevronLeft className="size-4" aria-hidden="true" />
+          Commandes
+        </Link>
+
+        <header className="mt-2">
+          <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
+            <h1 className="flex min-w-0 items-center gap-1 font-display text-2xl leading-tight font-bold tracking-wide tnum text-ink sm:text-3xl">
+              <span className="break-all">{order.reference}</span>
+              <CopyButton
+                value={order.reference}
+                label="Copier la référence"
+                copiedLabel="Copié"
+                iconOnly
+                className="shrink-0 border-0 bg-transparent"
+              />
+            </h1>
+            <StatusPill status={order.status} label={statusLabelFr(order.status)} />
+            <MethodBadge method={order.method} size="sm" />
+            {order.mode === 'sandbox' ? <Chip tone="test">TEST</Chip> : null}
+          </div>
+          <p className="mt-1 text-sm text-ink-soft">
+            {orderMomentFr(order, now)} · créée le {formatDateTime(order.createdAt)}
+          </p>
+        </header>
+      </div>
 
       {order.mode === 'sandbox' ? (
         <Alert tone="danger" title="Commande de test">
           Ce paiement vient d’un rail en bac à sable : aucune gourde réelle n’a été reçue. Elle est exclue des files
           « à recharger » et de tous les totaux, et ses notifications portent la mention « [TEST] ».
-        </Alert>
-      ) : null}
-
-      {expired ? (
-        <Alert tone="warning" title="Délai de paiement dépassé">
-          L’échéance était le {formatDateTime(order.expiresAt)}. Un paiement confirmé après coup passera par
-          « À vérifier », jamais directement par « Payée ».
         </Alert>
       ) : null}
 
@@ -155,7 +240,7 @@ export default async function AdminOrderPage({ params }: PageParams) {
         </Alert>
       ) : null}
 
-      {showFulfilPanel ? (
+      {actionable ? (
         <FulfilPanel
           orderId={order.id}
           reference={order.reference}
@@ -173,157 +258,136 @@ export default async function AdminOrderPage({ params }: PageParams) {
           fulfilledAt={order.fulfilledAt}
           whatsappHref={whatsappHref}
         />
-      ) : null}
+      ) : (
+        <section
+          data-surface="dark"
+          aria-label="L’essentiel"
+          className="rounded-[1.75rem] bg-ink p-5 text-paper shadow-lift sm:p-7"
+        >
+          <p className="text-[15px] leading-snug text-paper/75">{stateSentence(order, expired, now)}</p>
+          <dl className="mt-5 grid grid-cols-2 gap-x-6 gap-y-5 sm:grid-cols-[auto_auto_minmax(0,1fr)]">
+            <div>
+              <dt className="text-xs text-paper/60">{order.status === 'fulfilled' ? 'Envoyé sur Meru' : 'Montant'}</dt>
+              <dd className="mt-1 font-display text-3xl leading-none font-bold tracking-tight tnum sm:text-4xl">
+                {formatUsd(order.fulfilledUsdCents ?? order.usdCents, 'fr')}
+              </dd>
+            </div>
+            <div>
+              <dt className="text-xs text-paper/60">{order.paidHtg === null ? 'À payer' : 'Reçu'}</dt>
+              <dd className="mt-1 font-display text-2xl leading-none font-semibold tracking-tight tnum sm:text-3xl">
+                {formatHtg(order.paidHtg ?? order.totalHtg)}
+              </dd>
+            </div>
+            <div className="col-span-2 min-w-0 sm:col-span-1">
+              <dt className="text-xs text-paper/60">{meruAccountLabelFr(order.meruAccountType)}</dt>
+              <dd className="mt-1 font-display text-lg leading-snug font-semibold break-all">{order.meruAccount}</dd>
+              {order.meruReference ? (
+                <dd className="mt-0.5 text-xs break-all text-paper/60">Référence Meru {order.meruReference}</dd>
+              ) : null}
+            </div>
+          </dl>
+        </section>
+      )}
 
-      {waMessages.length > 0 ? (
-        <Panel title="Écrire au client">
-          <p className="mb-3 text-sm text-ink-soft">
-            Le message s’ouvre dans WhatsApp sur votre téléphone, déjà rédigé en{' '}
-            {order.locale === 'ht' ? 'kreyòl' : 'français'}. Vous relisez avant d’envoyer, et l’envoi
-            est inscrit dans l’historique de la commande.
-          </p>
-          <WhatsAppMenu
+      <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_23rem] lg:items-start">
+        <div className="order-2 min-w-0 space-y-6 lg:order-1">
+          <Panel title="Historique">
+            <OrderTimeline events={events} />
+          </Panel>
+
+          <section aria-labelledby="notifications-title" className="space-y-3">
+            <h2 id="notifications-title" className="font-display text-base font-semibold tracking-tight text-ink">
+              Messages envoyés
+            </h2>
+            <NotificationsTable
+              rows={notifications.map((row) => toListItem(row, order))}
+              empty="Aucun message pour cette commande."
+            />
+          </section>
+
+          <RawJson title="Données brutes de la commande" value={order} />
+        </div>
+
+        <aside className="order-1 min-w-0 space-y-6 lg:order-2">
+          {client}
+
+          <Panel title="Prix">
+            <dl>
+              <Row label="Montant commandé">{formatUsd(order.usdCents, 'fr')}</Row>
+              <Row label={`Conversion à ${formatRate(order.fxRateHtg, 'fr')}`}>{formatHtg(order.baseHtg)}</Row>
+              {order.feeLines.map((line) => (
+                <Row key={line.id} label={line.label}>
+                  {formatHtg(line.amountHtg)}
+                </Row>
+              ))}
+              <Row label="Total à payer">
+                <span className="font-display font-semibold tnum">{formatHtg(order.totalHtg)}</span>
+              </Row>
+              <Row label="Reçu du fournisseur">
+                {order.paidHtg === null ? NONE : <span className="tnum">{formatHtg(order.paidHtg)}</span>}
+              </Row>
+              <Row label="Taux tout compris">{formatRate(effective, 'fr')}</Row>
+              <Row label="Dollars envoyés">
+                {order.fulfilledUsdCents === null ? NONE : formatUsd(order.fulfilledUsdCents, 'fr')}
+              </Row>
+              {order.refundHtg === null ? null : (
+                <Row label="Remboursé">
+                  {formatHtg(order.refundHtg)}
+                  {order.refundWallet ? ` sur ${order.refundWallet}` : ''}
+                </Row>
+              )}
+            </dl>
+          </Panel>
+
+          <Panel title="Paiement">
+            <dl>
+              <Row label="Fournisseur">{order.provider ?? NONE}</Row>
+              <Row label="Mode">{order.mode === 'sandbox' ? 'Bac à sable (test)' : 'Réel'}</Row>
+              <Row label="Référence fournisseur">
+                <span className="break-all">{order.providerRef ?? NONE}</span>
+              </Row>
+              <Row label="Transaction">
+                <span className="break-all">{order.providerTransactionId ?? NONE}</span>
+              </Row>
+              <Row label="Portefeuille payeur">
+                {payerWallet ? (
+                  <span className={payerMismatch ? 'text-coral-deep' : undefined}>
+                    {payerWallet}
+                    {payerMismatch ? ' — différent du téléphone du client' : ''}
+                  </span>
+                ) : (
+                  NONE
+                )}
+              </Row>
+              <Row label="Vérifications">
+                <span className="tnum">{order.verifyAttempts}</span>
+                {order.lastVerifiedAt ? `, la dernière ${timeAgoFr(order.lastVerifiedAt, now)}` : ''}
+              </Row>
+            </dl>
+          </Panel>
+
+          <Panel title="Dates">
+            <dl>
+              <Row label="Créée">{formatDateTime(order.createdAt)}</Row>
+              <Row label="Échéance de paiement">{formatDateTime(order.expiresAt)}</Row>
+              <Row label="Retour du client">{order.returnedAt ? formatDateTime(order.returnedAt) : NONE}</Row>
+              <Row label="Paiement confirmé">{order.paidAt ? formatDateTime(order.paidAt) : NONE}</Row>
+              <Row label="Rechargée">{order.fulfilledAt ? formatDateTime(order.fulfilledAt) : NONE}</Row>
+              <Row label="Dernière modification">{formatDateTime(order.updatedAt)}</Row>
+            </dl>
+          </Panel>
+
+          <OrderActions
             orderId={order.id}
-            reference={order.reference}
-            customerName={order.customerName}
-            customerPhone={order.customerPhone}
-            messages={waMessages}
+            status={order.status}
+            meruAccountType={order.meruAccountType}
+            meruAccount={order.meruAccount}
+            adminNote={order.adminNote}
+            suggestedRefundHtg={order.paidHtg ?? order.totalHtg}
+            suggestedRefundWallet={payerWallet ?? order.customerPhone}
           />
-        </Panel>
-      ) : null}
-
-      <OrderActions
-        orderId={order.id}
-        status={order.status}
-        meruAccountType={order.meruAccountType}
-        meruAccount={order.meruAccount}
-        adminNote={order.adminNote}
-        suggestedRefundHtg={order.paidHtg ?? order.totalHtg}
-        suggestedRefundWallet={payerWallet ?? order.customerPhone}
-      />
-
-      <div className="grid gap-5 lg:grid-cols-2">
-        <Panel title="Devis figé">
-          <dl>
-            <Row label="Montant commandé">{formatUsd(order.usdCents, 'fr')}</Row>
-            <Row label={`Conversion au taux ${formatRate(order.fxRateHtg, 'fr')}`}>{formatHtg(order.baseHtg)}</Row>
-            {order.feeLines.map((line) => (
-              <Row key={line.id} label={line.label}>
-                {formatHtg(line.amountHtg)}
-              </Row>
-            ))}
-            <Row label="Total à payer">
-              <span className="font-display font-semibold tnum">{formatHtg(order.totalHtg)}</span>
-            </Row>
-            <Row label="Reçu du fournisseur">
-              {order.paidHtg === null ? NONE : <span className="tnum">{formatHtg(order.paidHtg)}</span>}
-            </Row>
-            <Row label="Taux tout compris">{formatRate(effective, 'fr')}</Row>
-            <Row label="Dollars envoyés">
-              {order.fulfilledUsdCents === null ? NONE : formatUsd(order.fulfilledUsdCents, 'fr')}
-            </Row>
-            {order.refundHtg === null ? null : (
-              <Row label="Remboursé">
-                {formatHtg(order.refundHtg)}
-                {order.refundWallet ? ` sur ${order.refundWallet}` : ''}
-              </Row>
-            )}
-          </dl>
-        </Panel>
-
-        <Panel title="Client">
-          <dl>
-            <Row label="Nom, tel qu’il doit apparaître dans Meru">{order.customerName}</Row>
-            <Row label="WhatsApp">
-              <span className="inline-flex items-center gap-2">
-                <span className="tnum">{formatPhone(order.customerPhone)}</span>
-                <CopyButton value={order.customerPhone} label="Copier" iconOnly />
-              </span>
-            </Row>
-            <Row label="Email">{order.customerEmail ?? NONE}</Row>
-            <Row label={meruAccountLabelFr(order.meruAccountType)}>
-              <span className="inline-flex items-center gap-2">
-                <span className="break-all">{order.meruAccount}</span>
-                <CopyButton value={order.meruAccount} label="Copier" iconOnly />
-              </span>
-            </Row>
-            <Row label="Référence Meru du transfert">{order.meruReference ?? NONE}</Row>
-            <Row label="Langue">{order.locale === 'ht' ? 'Kreyòl' : 'Français'}</Row>
-            {/* A signed-in customer links the order to a Clerk account; a guest
-                order says so plainly, because « aucun compte » is a normal,
-                supported way to order here — not a missing piece of data. */}
-            <Row label="Compte client">
-              {order.clerkUserId ? (
-                <span className="inline-flex flex-wrap items-center justify-end gap-2">
-                  <span>Commande passée depuis un compte</span>
-                  <code className="rounded bg-mist px-1.5 py-0.5 text-xs break-all">{order.clerkUserId}</code>
-                  <CopyButton value={order.clerkUserId} label="Copier l’identifiant du compte" iconOnly />
-                </span>
-              ) : (
-                'Commande sans compte'
-              )}
-            </Row>
-            <Row label="Note de l’opérateur">{order.adminNote ?? NONE}</Row>
-          </dl>
-        </Panel>
-
-        <Panel title="Fournisseur">
-          <dl>
-            <Row label="Fournisseur">{order.provider ?? NONE}</Row>
-            <Row label="Mode">{order.mode === 'sandbox' ? 'Bac à sable (test)' : 'Réel'}</Row>
-            <Row label="Référence fournisseur">
-              <span className="break-all">{order.providerRef ?? NONE}</span>
-            </Row>
-            <Row label="Transaction">
-              <span className="break-all">{order.providerTransactionId ?? NONE}</span>
-            </Row>
-            <Row label="Portefeuille payeur">
-              {payerWallet ? (
-                <span className={payerMismatch ? 'text-coral-deep' : undefined}>
-                  {payerWallet}
-                  {payerMismatch ? ' — différent du téléphone du client' : ''}
-                </span>
-              ) : (
-                NONE
-              )}
-            </Row>
-            <Row label="Vérifications">
-              <span className="tnum">{order.verifyAttempts}</span>
-              {order.lastVerifiedAt ? `, dernière le ${formatDateTime(order.lastVerifiedAt)}` : ''}
-            </Row>
-            <Row label="Redirection valable jusqu’à">
-              {order.redirectExpiresAt ? formatDateTime(order.redirectExpiresAt) : NONE}
-            </Row>
-          </dl>
-        </Panel>
-
-        <Panel title="Dates">
-          <dl>
-            <Row label="Créée">{formatDateTime(order.createdAt)}</Row>
-            <Row label="Échéance de paiement">{formatDateTime(order.expiresAt)}</Row>
-            <Row label="Retour du client">{order.returnedAt ? formatDateTime(order.returnedAt) : NONE}</Row>
-            <Row label="Paiement confirmé">{order.paidAt ? formatDateTime(order.paidAt) : NONE}</Row>
-            <Row label="Rechargée">{order.fulfilledAt ? formatDateTime(order.fulfilledAt) : NONE}</Row>
-            <Row label="Dernière modification">{formatDateTime(order.updatedAt)}</Row>
-          </dl>
-        </Panel>
+        </aside>
       </div>
-
-      <Panel title="Chronologie">
-        <OrderTimeline events={events} />
-      </Panel>
-
-      <section aria-labelledby="notifications-title" className="space-y-3">
-        <CardTitle as="h2">
-          <span id="notifications-title">Notifications</span>
-        </CardTitle>
-        <NotificationsTable
-          rows={notifications.map((row) => toListItem(row, order))}
-          empty="Aucune notification pour cette commande."
-        />
-      </section>
-
-      <RawJson title="Données brutes de la commande" value={order} />
     </div>
   );
 }

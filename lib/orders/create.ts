@@ -90,6 +90,13 @@ export type CreateOrderContext = CreateOrderInput & {
    * reach both.
    */
   accountEmail?: string | null;
+  /**
+   * The visitor-analytics device id (`rm_device` cookie, already checked to
+   * be a UUID by the route), or `null`. Read from the cookie and never from
+   * the body — `createOrderSchema` has no such key, so Zod drops it — and
+   * used for nothing but « which visitors went on to order ».
+   */
+  deviceId?: string | null;
 };
 
 /** How many fresh references to try when one collides (32^8 values: a collision is a curiosity). */
@@ -159,6 +166,7 @@ export async function createOrder(input: CreateOrderContext): Promise<CreateOrde
       totalHtg: quote.totalHtg,
       clerkUserId: input.clerkUserId ?? null,
       accountEmail: input.accountEmail ?? null,
+      deviceId: input.deviceId ?? null,
       customerName: input.customerName.trim(),
       customerPhone,
       customerEmail: input.customerEmail ?? null,

@@ -14,8 +14,8 @@ export default async function AdminNotificationsPage() {
   return (
     <div className="space-y-5">
       <header>
-        <h1 className="font-display text-2xl font-semibold tracking-tight text-ink">Notifications</h1>
-        <p className="mt-0.5 max-w-3xl text-sm leading-snug text-ink-soft">
+        <h1 className="font-display text-3xl font-bold tracking-tight text-ink sm:text-4xl">Notifications</h1>
+        <p className="mt-1 max-w-3xl text-sm leading-snug text-ink-soft">
           Les {LIMIT} derniers messages, opérateur et clients confondus. Une ligne « Ignorée » signifie que le canal
           n’est pas configuré ou que le message avait déjà été envoyé ; une ligne « Renvoi » vient du bouton de la
           fiche commande.
