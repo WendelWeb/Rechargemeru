@@ -8,4 +8,4 @@
  *
  * To reopen, set it back to `false` and deploy.
  */
-export const ORDERS_PAUSED: boolean = true;
+export const ORDERS_PAUSED: boolean = false;
