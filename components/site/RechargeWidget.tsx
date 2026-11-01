@@ -70,6 +70,8 @@ export type RechargeWidgetProps = {
   /** `false` when Clerk is not configured: the widget then says nothing about accounts. */
   accountsEnabled?: boolean;
   account?: WidgetAccount | null;
+  /** `true` while new orders are closed: the amount screen stays, the form stops there. */
+  paused?: boolean;
   className?: string;
 };
 
@@ -84,6 +86,7 @@ const FLOW: readonly Step[] = ['amount', 'details', 'confirm'];
 /** Exactly the keys under `home.errors`; anything else falls back to `unknown`. */
 const ERROR_KEYS: readonly string[] = [
   'not_configured',
+  'orders_paused',
   'method_unavailable',
   'bad_phone',
   'bad_meru_account',
@@ -146,6 +149,7 @@ export function RechargeWidget({
   copiedLabel,
   accountsEnabled = false,
   account = null,
+  paused = false,
   className,
 }: RechargeWidgetProps) {
   const t = useTranslations('home');
@@ -276,6 +280,8 @@ export function RechargeWidget({
   }
 
   function onAmountContinue() {
+    // The button is disabled, but « Entrée » in the amount field still submits.
+    if (paused) return;
     if (!quoteResult.ok) {
       const next = { amount: amountError() };
       setErrors(next);
@@ -385,12 +391,20 @@ export function RechargeWidget({
     }
   }
 
+  const pausedNotice = paused ? (
+    <Alert tone="warning" title={t('widget.paused.title')}>
+      {t('widget.paused.body')}
+    </Alert>
+  ) : null;
+
   if (methods.length === 0) {
     return (
       <div className={cn('rounded-[1.75rem] border border-line bg-paper p-card shadow-lift', className)}>
-        <Alert tone="danger" title={t('widget.title')}>
-          {t('widget.method.none')}
-        </Alert>
+        {pausedNotice ?? (
+          <Alert tone="danger" title={t('widget.title')}>
+            {t('widget.method.none')}
+          </Alert>
+        )}
       </div>
     );
   }
@@ -498,6 +512,7 @@ export function RechargeWidget({
           onAmountContinue();
         }}
       >
+        {pausedNotice ? <div className="mb-5">{pausedNotice}</div> : null}
         <h2
           ref={headingRef}
           tabIndex={-1}
@@ -647,8 +662,8 @@ export function RechargeWidget({
           }
           totalHtg={localQuote?.totalHtg ?? null}
         >
-          <Button type="submit" variant="dark" size="lg" className="w-full">
-            {t('widget.continue')}
+          <Button type="submit" variant="dark" size="lg" className="w-full" disabled={paused}>
+            {paused ? t('widget.paused.cta') : t('widget.continue')}
           </Button>
         </TotalBar>
       </form>

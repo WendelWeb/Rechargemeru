@@ -58,6 +58,11 @@
       "emailPlaceholder": "vous@mail.com"
     },
     "continue": "Continuer",
+    "paused": {
+      "title": "La recharge est indisponible pour le moment",
+      "body": "C'est pour très bientôt !",
+      "cta": "Bientôt disponible"
+    },
     "account": {
       "signedIn": "Connecté comme {account} — cette commande sera enregistrée dans votre compte.",
       "guest": "Vous pouvez commander sans compte. Créer un compte permet de retrouver vos commandes.",
@@ -142,6 +147,7 @@
   "errors": {
     "title": "La commande n'a pas pu être créée",
     "not_configured": "Le service n'est pas encore prêt à recevoir des commandes. Réessayez plus tard ou écrivez-nous sur WhatsApp.",
+    "orders_paused": "La recharge est indisponible pour le moment. C'est pour très bientôt !",
     "method_unavailable": "{method} n'est pas disponible pour le moment. Choisissez un autre moyen de paiement.",
     "bad_phone": "Ce numéro WhatsApp n'est pas valide. Utilisez un numéro haïtien à 8 chiffres, ou un numéro +1.",
     "bad_meru_account": "Cet identifiant Meru n'est pas valide. Vérifiez-le dans l'application Meru.",

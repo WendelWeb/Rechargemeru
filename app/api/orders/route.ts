@@ -37,6 +37,7 @@ import { DEVICE_COOKIE, isDeviceId } from '@/lib/analytics/visitor';
 import { currentAdmin } from '@/lib/auth/admin';
 import { currentUserEmail, currentUserId } from '@/lib/auth/clerk';
 import { dbConfigured } from '@/lib/env';
+import { ORDERS_PAUSED } from '@/lib/orders/availability';
 import { ORDER_COOKIE, orderCookieOptions } from '@/lib/orders/cookie';
 import { createOrder, createOrderSchema, type CreateOrderError } from '@/lib/orders/create';
 import type { OrderRow } from '@/lib/orders/types';
@@ -92,6 +93,11 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
   // exist, and the customer must see « indisponible », not « champ invalide ».
   if (!dbConfigured()) {
     return NextResponse.json({ ok: false, error: 'not_configured' }, { status: 503, headers: NO_STORE });
+  }
+
+  // The page already stops the form; this is for a tab opened before the pause.
+  if (ORDERS_PAUSED) {
+    return NextResponse.json({ ok: false, error: 'orders_paused' }, { status: 503, headers: NO_STORE });
   }
 
   let body: unknown;

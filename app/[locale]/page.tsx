@@ -8,6 +8,7 @@ import { Link } from '@/i18n/navigation';
 import { routing, type AppLocale } from '@/i18n/routing';
 import { currentAdmin } from '@/lib/auth/admin';
 import { clerkConfigured, currentUserEmail, currentUserId, currentUserName } from '@/lib/auth/clerk';
+import { ORDERS_PAUSED } from '@/lib/orders/availability';
 import { ORDER_COOKIE } from '@/lib/orders/cookie';
 import { getOrderByReference } from '@/lib/orders/queries';
 import { normalizeReference } from '@/lib/orders/reference';
@@ -179,6 +180,7 @@ export default async function HomePage({ params }: HomeProps) {
               copiedLabel={c('copied')}
               accountsEnabled={accountsEnabled}
               account={account}
+              paused={ORDERS_PAUSED}
             />
             <p className="mt-4 text-center text-sm text-ink-soft">
               {t('trackLink.lead')}{' '}

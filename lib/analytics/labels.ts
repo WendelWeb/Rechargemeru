@@ -90,6 +90,7 @@ const SERVER_ERRORS: Record<string, string> = {
   provider_error: 'le portefeuille a refusé',
   method_unavailable: 'ce portefeuille était indisponible',
   not_configured: 'service pas prêt',
+  orders_paused: 'recharge en pause',
   bad_phone: 'numéro refusé',
   bad_meru_account: 'identifiant Meru refusé',
   wallet_limit: 'montant au-dessus du plafond',

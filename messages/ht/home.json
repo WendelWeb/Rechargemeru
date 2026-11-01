@@ -58,6 +58,11 @@
       "emailPlaceholder": "ou@mail.com"
     },
     "continue": "Kontinye",
+    "paused": {
+      "title": "Rechaj la pa disponib kounye a",
+      "body": "Li pral disponib byento !",
+      "cta": "Byento disponib"
+    },
     "account": {
       "signedIn": "Ou konekte kòm {account} — se nan kont ou n ap anrejistre kòmand sa a.",
       "guest": "Ou ka kòmande san kont. Lè w gen yon kont, ou jwenn tout kòmand ou yo yon sèl kote.",
@@ -142,6 +147,7 @@
   "errors": {
     "title": "Nou pa t ka kreye kòmand lan",
     "not_configured": "Sèvis la poko pare pou resevwa kòmand. Eseye pita oswa ekri nou sou WhatsApp.",
+    "orders_paused": "Rechaj la pa disponib kounye a. Li pral disponib byento !",
     "method_unavailable": "{method} pa disponib kounye a. Chwazi yon lòt mwayen peman.",
     "bad_phone": "Nimewo WhatsApp sa a pa valab. Sèvi ak yon nimewo ayisyen ak 8 chif, oswa yon nimewo +1.",
     "bad_meru_account": "Idantifyan Meru sa a pa valab. Tcheke l nan aplikasyon Meru a.",
