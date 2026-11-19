@@ -1,5 +1,6 @@
-import { Fragment, type ReactNode, type RefObject } from 'react';
+import { Fragment, useState, type ReactNode, type RefObject } from 'react';
 import { useTranslations } from 'next-intl';
+import { Link } from '@/i18n/navigation';
 import { formatUsd, type FormatLocale } from '@/lib/format';
 import type { PaymentMethod } from '@/lib/orders/types';
 import type { Quote } from '@/lib/pricing/quote';
@@ -87,6 +88,9 @@ export function ConfirmStep({
   onSubmit,
 }: ConfirmStepProps) {
   const t = useTranslations('home');
+  // The customer must tick this before the order can be sent; it resets each
+  // time the confirm screen is mounted, so acceptance is always a fresh act.
+  const [accepted, setAccepted] = useState(false);
 
   return (
     <div className="space-y-5">
@@ -135,6 +139,28 @@ export function ConfirmStep({
 
       {notice}
 
+      <label className="flex items-start gap-3 text-sm leading-relaxed text-ink-soft">
+        <input
+          type="checkbox"
+          checked={accepted}
+          onChange={(event) => setAccepted(event.target.checked)}
+          className="mt-0.5 size-5 shrink-0 cursor-pointer rounded border-line-strong accent-ink"
+        />
+        <span>
+          {t.rich('confirm.terms', {
+            terms: (chunks) => (
+              <Link
+                href="/conditions"
+                target="_blank"
+                className="rounded font-medium text-ink underline decoration-line-strong underline-offset-2 transition-colors hover:decoration-ink"
+              >
+                {chunks}
+              </Link>
+            ),
+          })}
+        </span>
+      </label>
+
       <div className="flex flex-col gap-2 sm:flex-row-reverse">
         <Button
           variant="primary"
@@ -143,6 +169,7 @@ export function ConfirmStep({
           onClick={onSubmit}
           loading={submitting}
           loadingLabel={t('confirm.submitting')}
+          disabled={!accepted}
         >
           {changed ? t('confirm.changed.submit') : t('confirm.submit')}
         </Button>

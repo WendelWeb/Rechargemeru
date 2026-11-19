@@ -13,6 +13,7 @@ const SECTIONS = [
   'service',
   'pricing',
   'delay',
+  'automation',
   'account',
   'refund',
   'expiry',

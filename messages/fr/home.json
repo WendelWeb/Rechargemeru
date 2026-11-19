@@ -121,6 +121,7 @@
     "edit": "Corriger",
     "submit": "Confirmer et payer",
     "submitting": "Création de la commande…",
+    "terms": "J'ai lu et j'accepte les <terms>conditions d'utilisation</terms> : recharge automatisée, délai pouvant aller jusqu'à 72 h en cas de complication, et aucun remboursement une fois la recharge envoyée.",
     "changed": {
       "title": "Le taux a changé",
       "body": "Le total en gourdes a été mis à jour pendant que vous remplissiez le formulaire. Vérifiez le nouveau montant avant de confirmer.",

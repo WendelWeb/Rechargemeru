@@ -1,15 +1,15 @@
 {
   "meta": {
     "title": "Kondisyon itilizasyon",
-    "description": "Kondisyon sèvis rechaj kont Meru an goud : pri, delè, idantifyan, ranbousman, done pèsonèl, okenn lyen ak Meru."
+    "description": "Kondisyon sèvis rechaj kont Meru an goud : pri, delè, sèvis otomatize, idantifyan, ranbousman, done pèsonèl, okenn lyen ak Meru."
   },
   "title": "Kondisyon itilizasyon",
   "lead": "Kondisyon sa yo esplike sèvis la, sa nou pran angajman pou nou fè, ak sa nou tann de ou.",
-  "updated": "Dènye mizajou : 25 septanm 2026.",
+  "updated": "Dènye mizajou : 18 novanm 2026.",
   "sections": {
     "service": {
       "title": "Sèvis la",
-      "body": "{business} se yon sèvis endepandan ki resevwa yon peman an goud pa MonCash oswa NatCash epi ki voye, an echanj, montan ki koresponn lan an dola US sou kont Meru ou endike a. Se operatè a menm ki fè dènye transfè a sou kont Meru ou, ak men l. Sèvis la se pou moun ki gen laj majè, pou yon itilizasyon pèsonèl e legal."
+      "body": "{business} se yon sèvis endepandan ki resevwa yon peman an goud pa MonCash oswa NatCash epi ki voye, an echanj, montan ki koresponn lan an dola US sou kont Meru ou endike a. Tretman kòmand lan ak voye dola yo otomatize. Sèvis la se pou moun ki gen laj majè, pou yon itilizasyon pèsonèl e legal."
     },
     "pricing": {
       "title": "Pri, to ak frè",
@@ -17,7 +17,11 @@
     },
     "delay": {
       "title": "Delè rechaj la",
-      "body": "Depi MonCash oswa NatCash konfime peman an, rechaj la fèt ak men, anjeneral nan {sla} pandan lè sèvis la ({hours}). Delè sa a se yon estimasyon, se pa yon garanti : yon pwoblèm nan yon operatè mobil, nan Meru oswa nan rezo a ka fè l pran plis tan. N ap enfòme ou sou WhatsApp."
+      "body": "Depi MonCash oswa NatCash konfime peman an, rechaj la lanse otomatikman. Yon ti delè ka parèt (pa egzanp « {sla} »), men se yon estimasyon sèlman, se pa yon garanti : si gen yon konplikasyon — yon verifikasyon anplis, yon pwoblèm nan yon operatè mobil, nan Meru, oswa nan rezo a — rechaj la ka pran jiska 72 èdtan. N ap enfòme ou sou WhatsApp."
+    },
+    "automation": {
+      "title": "Yon sèvis otomatize",
+      "body": "Se robot ki fè rechaj yo otomatikman : verifye peman an, mete kòmand lan nan liy epi voye dola yo sou kont Meru ou, tout fèt otomatikman. Otomatizasyon sa a fè sèvis la rapid pifò tan ; men si gen yon dout oswa yon bagay ki pa nòmal, yon kòmand ka mete an atant pou yon kontwòl, sa ki ka fè delè a vin pi long."
     },
     "account": {
       "title": "Idantifyan Meru ak responsablite",
@@ -25,7 +29,7 @@
     },
     "refund": {
       "title": "Ranbousman",
-      "body": "Si nou te pran peman ou men rechaj la pa ka fèt, n ap ranbouse ou an goud, sou bous mobil ki te sèvi pou peye a, nan 48 èdtan. Nan ka sa a nou ranbouse frè sèvis la tou. Yon rechaj ki deja voye sou yon kont Meru pa ka anile ni reprann."
+      "body": "Toutotan rechaj la poko voye : si nou te pran peman ou men rechaj la pa ka fèt, n ap ranbouse ou an goud, sou bous mobil ki te sèvi pou peye a, frè sèvis la ladann, nan 48 èdtan. Depi rechaj la voye : pa gen okenn ranbousman posib. Yon transfè sou yon kont Meru se definitif — li pa ka anile, ni reprann, ni ranbouse, menm lè idantifyan Meru ou te konfime a te gen yon erè."
     },
     "expiry": {
       "title": "Ekspirasyon ak anilasyon",
@@ -45,7 +49,7 @@
     },
     "support": {
       "title": "Sipò ak reklamasyon",
-      "body": "Sipò a reponn sou WhatsApp ({hours}). Pou nenpòt reklamasyon, bay referans kòmand lan (MR-…) ak konfimasyon peman bous ou te voye ba ou a : se sa ki fè nou jwenn yon peman pi vit. Se lwa ayisyen ki aplike sou kondisyon sa yo."
+      "body": "Sipò a disponib sou WhatsApp ({hours}). Repons WhatsApp yo otomatik : se yon robot ki reponn epi ki okipe demann ki pi kouran yo. Li ka ede ou swiv yon kòmand oswa siyale yon pwoblèm, men li pa ka ni fè yon rechaj ale pi vit, ni retounen sou yon transfè ki deja voye. Pou nenpòt reklamasyon, bay referans kòmand lan (MR-…) ak konfimasyon peman bous ou te voye ba ou a. Se lwa ayisyen ki aplike sou kondisyon sa yo."
     }
   }
 }
