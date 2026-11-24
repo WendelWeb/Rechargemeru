@@ -59,9 +59,9 @@
     },
     "continue": "Kontinye",
     "paused": {
-      "title": "Rechaj la pa disponib kounye a",
-      "body": "Li pral disponib byento !",
-      "cta": "Byento disponib"
+      "title": "Rechaj la pa disponib",
+      "body": "Meru pa bay kat ankò pou kont ayisyen yo. Kòm dola sa yo pa ka sèvi sou yon kat ankò, nou sispann rechaj la. Mèsi pou konfyans ou.",
+      "cta": "Rechaj sispann"
     },
     "account": {
       "signedIn": "Ou konekte kòm {account} — se nan kont ou n ap anrejistre kòmand sa a.",
@@ -148,7 +148,7 @@
   "errors": {
     "title": "Nou pa t ka kreye kòmand lan",
     "not_configured": "Sèvis la poko pare pou resevwa kòmand. Eseye pita oswa ekri nou sou WhatsApp.",
-    "orders_paused": "Rechaj la pa disponib kounye a. Li pral disponib byento !",
+    "orders_paused": "Rechaj la pa disponib : Meru pa bay kat ankò pou kont ayisyen yo, kidonk nou sispann sèvis la.",
     "method_unavailable": "{method} pa disponib kounye a. Chwazi yon lòt mwayen peman.",
     "bad_phone": "Nimewo WhatsApp sa a pa valab. Sèvi ak yon nimewo ayisyen ak 8 chif, oswa yon nimewo +1.",
     "bad_meru_account": "Idantifyan Meru sa a pa valab. Tcheke l nan aplikasyon Meru a.",
